@@ -3,6 +3,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import DataTable from "react-data-table-component";
 import Button from "../components/Button";
+import Reg_Title from "../components/Reg_Title";
 
 const StudentManage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,7 +66,7 @@ const StudentManage = () => {
   const customStyles = {
     headCells: {
       style: {
-        backgroundColor: "rgb(37, 99, 245)", 
+        backgroundColor: "rgb(37, 99, 245)",
         color: "#ffffff",
         fontWeight: "bold",
         fontSize: "14px",
@@ -92,16 +93,12 @@ const StudentManage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       {/* Header */}
-      <div className="mb-4 flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          All Students List
-        </h2>
-      </div>
+      <Reg_Title name="All Students List" />
 
       {/* Search Input */}
       <div className="mb-6 flex justify-between items-center">
         <Link to="/add_student">
-        <Button name="+ Add Student" />
+          <Button name="+ Add Student" />
         </Link>
         <input
           type="text"

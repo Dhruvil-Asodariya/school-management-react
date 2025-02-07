@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Button from "../components/Button";
+import Form_Title from "../components/Form_Title";
 
 const Add_Holiday = () => {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ const Add_Holiday = () => {
     <>
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">Add Holiday</h2>
+        <Form_Title name="Add New Holiday" />
           <form onSubmit={formik.handleSubmit}>
             {/* Holiday Name */}
             <div className="mb-4">

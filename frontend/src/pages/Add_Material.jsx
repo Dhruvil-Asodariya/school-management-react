@@ -3,6 +3,7 @@ import * as Yup from "yup";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
+import Form_Title from "../components/Form_Title";
 
 const Add_Material = () => {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ const Add_Material = () => {
 
   return (
     <div className="mx-auto p-6 bg-white shadow-lg rounded-lg mt-3">
-      <h2 className="text-2xl font-semibold text-center mb-4">Add Material Details</h2>
+      <Form_Title name="Add New Material" />
 
       <Formik 
         initialValues={initialValues}

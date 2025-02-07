@@ -3,6 +3,7 @@ import * as Yup from "yup";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
+import Form_Title from "../components/Form_Title";
 
 const Add_Student = () => {
   const navigate = useNavigate();
@@ -61,9 +62,7 @@ const Add_Student = () => {
   return (
     <div className="flex justify-center items-center ">
       <div className="w-full bg-gray-10 shadow-lg rounded-lg p-6 mt-3">
-        <h2 className="text-2xl font-bold text-center text-gray-700 mb-4">
-          Add New Student
-        </h2>
+        <Form_Title name="Add New Student" />
         <form className="space-y-4" onSubmit={formik.handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

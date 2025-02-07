@@ -129,7 +129,7 @@ const MasterPage = ({ children }) => {
       )}
 
       {/* Layout Below Navbar */}
-      <div className="flex flex-1 pt-10">
+      <div className="flex flex-1 pt-13">
         {/* Sidebar */}
         <div
           className={`mt-5 transition-transform duration-300 ${

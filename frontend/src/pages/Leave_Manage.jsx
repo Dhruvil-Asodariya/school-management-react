@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DataTable from "react-data-table-component";
+import Reg_Title from "../components/Reg_Title";
 
 const Leave_Manage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,9 +98,7 @@ const Leave_Manage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       {/* Header */}
-      <div className="mb-4 flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-800">All Leave Requests</h2>
-      </div>
+      <Reg_Title name="All Leave List" />
 
       {/* Search Input */}
       <div className="mb-6 flex justify-between items-center">

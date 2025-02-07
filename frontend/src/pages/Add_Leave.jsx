@@ -2,6 +2,7 @@ import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import Swal from "sweetalert2";
 import Button from "../components/Button";
+import Form_Title from "../components/Form_Title";
 
 const Add_Leave = () => {
   const initialValues = {
@@ -37,7 +38,7 @@ const Add_Leave = () => {
 
   return (
     <div className="mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Leave Application</h2>
+      <Form_Title name="Add New Leave" />
 
       <Formik initialValues={initialValues} validationSchema={validationSchema} onSubmit={handleSubmit}>
         {() => (

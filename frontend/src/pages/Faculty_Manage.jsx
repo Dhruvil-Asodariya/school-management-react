@@ -3,6 +3,7 @@ import { FaEdit, FaTrash } from "react-icons/fa";
 import { useState } from "react";
 import DataTable from "react-data-table-component";
 import Button from "../components/Button";
+import Reg_Title from "../components/Reg_Title";
 
 const FacultyManage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -92,11 +93,7 @@ const FacultyManage = () => {
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       {/* Header */}
-      <div className="mb-4 flex justify-between items-center">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          All Faculty List
-        </h2>
-      </div>
+      <Reg_Title name="All Faculty List" />
 
       {/* Search Input */}
       <div className="mb-6 flex justify-between items-center">
