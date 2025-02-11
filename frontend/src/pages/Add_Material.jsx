@@ -59,13 +59,13 @@ const Add_Material = () => {
         {({ setFieldValue }) => (
           <Form className="space-y-4">
             <div>
-              <label className="block text-gray-700">Material Title</label>
+              <label className="block text-gray-700 font-medium">Material Title</label>
               <Field type="text" name="materialTitle" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter Material Title" />
               <ErrorMessage name="materialTitle" component="p" className="text-red-500 text-sm" />
             </div>
 
             <div>
-              <label className="block text-gray-700">Select Class</label>
+              <label className="block text-gray-700 font-medium">Select Class</label>
               <Field as="select" name="selectedClass" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">-- Choose Class --</option>
                 <option value="class 1">Class 1</option>
@@ -76,7 +76,7 @@ const Add_Material = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700">Select Subject</label>
+              <label className="block text-gray-700 font-medium">Select Subject</label>
               <Field as="select" name="selectedSubject" className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">-- Choose Subject --</option>
                 <option value="Maths">Maths</option>
@@ -87,7 +87,7 @@ const Add_Material = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700">Select Chapter</label>
+              <label className="block text-gray-700 font-medium">Select Chapter</label>
               <Field as="select" name="selectedChapters" multiple className="w-full p-2 border border-gray-300 rounded-md h-24 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="Chapter 1">Chapter 1</option>
                 <option value="Chapter 2">Chapter 2</option>
@@ -99,7 +99,7 @@ const Add_Material = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700">Multiple Material Add</label>
+              <label className="block text-gray-700 font-medium">Multiple Material Add</label>
               <input type="file" multiple className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onChange={(event) => setFieldValue("files", event.currentTarget.files)} />
               <ErrorMessage name="files" component="p" className="text-red-500 text-sm" />
             </div>

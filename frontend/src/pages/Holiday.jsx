@@ -16,7 +16,7 @@ const Holiday = () => {
   const [selectedMonth, setSelectedMonth] = useState(months[0]);
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-100">
       {/* Add Holiday Button */}
       <Link to="/add_holiday" className="inline-block mb-4">
       <Button name="+ Add Holiday" />

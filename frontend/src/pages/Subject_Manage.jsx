@@ -1,14 +1,32 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { FaEdit, FaTrash } from "react-icons/fa";
 import Swal from "sweetalert2";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Button from "../components/Button";
-// import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const Subject_Manage = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
+  const [data, setData] = useState([]);
 
+  // ✅ Function to Fetch Data from Backend
+  const fetchData = async () => {
+    try {
+      const res = await axios.get("http://localhost:8081/subject");
+      setData(res.data);
+    } catch (err) {
+      console.error("Error fetching subjects:", err);
+    }
+  };
+
+  // ✅ Fetch Data When Component Mounts
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // ✅ Validation Schema
   const validationSchema = Yup.object({
     subjectName: Yup.string().required("Please Enter Subject name"),
   });
@@ -18,30 +36,36 @@ const Subject_Manage = () => {
       subjectName: "",
     },
     validationSchema,
-    onSubmit: () => {
-      Swal.fire({
-        title: "Success!",
-        text: "New subject successfully added",
-        icon: "success",
-        timer: 1000,
-        showConfirmButton: true,
-        timerProgressBar: true,
-      }).then(() => {
-        formik.resetForm();  // Reset form fields after submission
-        navigate("/subject_manage");
-      });
+    onSubmit: async (values) => {
+      try {
+        // Send form data to backend
+        await axios.post("http://localhost:8081/subject", {
+          subjectName: values.subjectName, // Passing form data as request body
+        });
+
+        Swal.fire({
+          title: "Success!",
+          text: "New subject successfully added",
+          icon: "success",
+          timer: 1000,
+          showConfirmButton: true,
+          timerProgressBar: true,
+        }).then(() => {
+          formik.resetForm(); // Reset form
+          fetchData(); // ✅ Refresh table data after submission
+        });
+
+      } catch (error) {
+        console.error("Error adding subject:", error);
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to add subject",
+          icon: "error",
+          showConfirmButton: true,
+        });
+      }
     },
   });
-
-  // const [data, setData] = useState([])
-  // useEffect(() => {
-  //   fetch("http://localhost:8081/subject")
-  //     .then(res => res.json())
-  //     .then(data => setData(data))
-  //     .catch(err => console.log(err));
-  // }, [])
-
-
 
   return (
     <div className="p-6 flex flex-row max-w-full justify-between gap-6">
@@ -78,22 +102,30 @@ const Subject_Manage = () => {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td className="px-4 py-2 text-center"></td>
-                <td className="px-4 py-2 text-center"></td>
-                <td className="px-4 py-2 space-x-4 text-center">
-                  <Link to={""}>
-                    <button className="text-blue-600 hover:text-blue-800">
-                      <FaEdit />
-                    </button>
-                  </Link>
-                  <Link to={""}>
-                    <button className="text-red-600 hover:text-red-800">
-                      <FaTrash />
-                    </button>
-                  </Link>
-                </td>
-              </tr>
+              {data.length > 0 ? (
+                data.map((subject, index) => (
+                  <tr key={index}>
+                    <td className="px-4 py-2 text-center">{index+1}</td>
+                    <td className="px-4 py-2 text-center">{subject.subject_name}</td>
+                    <td className="px-4 py-2 space-x-4 text-center">
+                      <Link to={""}>
+                        <button className="text-blue-600 hover:text-blue-800">
+                          <FaEdit />
+                        </button>
+                      </Link>
+                      <Link to={""}>
+                        <button className="text-red-600 hover:text-red-800">
+                          <FaTrash />
+                        </button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="text-center py-4">No subjects available</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
