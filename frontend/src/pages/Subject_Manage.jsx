@@ -31,7 +31,7 @@ const Subject_Manage = () => {
   const validationSchema = Yup.object({
     subjectName: Yup.string().required("Please Enter Subject name"),
   });
-
+  // Add Subject
   // ✅ Formik for Adding Subject
   const formik = useFormik({
     initialValues: {
@@ -68,6 +68,7 @@ const Subject_Manage = () => {
     },
   });
 
+  // Update Subject
   // ✅ Open Edit Modal
   const handleEditClick = (subject) => {
     setEditSubject(subject);
@@ -109,6 +110,7 @@ const Subject_Manage = () => {
     },
   });
 
+  //Delete Subject
   const handleDeleteClick = async (subjectId) => {
     const result = await Swal.fire({
       title: "Are you sure?",

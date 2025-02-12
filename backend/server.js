@@ -13,6 +13,7 @@ const db = mysql.createConnection({
     database: "sm_system"
 })
 
+// Get All Subject 
 app.get('/subject', (req, res) => {
     const sql = "SELECT * FROM subject_detail";
     db.query(sql, (err, result) => {
@@ -21,6 +22,7 @@ app.get('/subject', (req, res) => {
     })
 })
 
+// Add New Subject
 app.post("/subject", (req, res) => {
     const { subjectName } = req.body;
 
@@ -37,6 +39,7 @@ app.post("/subject", (req, res) => {
     });
 });
 
+// Update Subject
 app.put("/subject/:id", async (req, res) => {
     const { subjectName } = req.body;
     const { id } = req.params;
@@ -55,6 +58,7 @@ app.put("/subject/:id", async (req, res) => {
     }
 });
 
+// Delete Subject
 app.delete("/subject/:id", (req, res) => {
     const { id } = req.params;
 
@@ -68,7 +72,66 @@ app.delete("/subject/:id", (req, res) => {
     });
 });
 
+// Get Class
+app.get('/class', (req, res) => {
+    const sql = "SELECT * FROM class_detail";
+    db.query(sql, (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        return res.json(result);
+    })
+})
 
+// Add New Class
+app.post("/class", (req, res) => {
+    const { className } = req.body;
+
+    if (!className) {
+        return res.status(400).json({ message: "Class name is required" });
+    }
+
+    const sql = "INSERT INTO class_detail (class_name) VALUES (?)";
+    db.query(sql, [className], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({ message: "Class added successfully", id: result.insertId });
+    });
+});
+
+// Update Class
+app.put("/class/:id", async (req, res) => {
+    const { className } = req.body;
+    const { id } = req.params;
+
+    if (!className) {
+        return res.status(400).json({ error: "Class name is required" });
+    }
+
+    try {
+        const sql = "UPDATE class_detail SET class_name = ? WHERE class_id = ?";
+        await db.query(sql, [className, id]);
+
+        res.json({ message: "Class updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to update class" });
+    }
+});
+
+// Delete Class
+app.delete("/class/:id", (req, res) => {
+    const { id } = req.params;
+
+    const sql = "DELETE FROM class_detail WHERE class_id = ?";
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("Error deleting class:", err);
+            return res.status(500).json({ error: "Failed to delete class" });
+        }
+        res.json({ message: "Class deleted successfully" });
+    });
+});
+
+// Start Server
 app.listen(8081, () => {
     console.log("listening");
 })
