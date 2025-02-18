@@ -131,6 +131,15 @@ app.delete("/class/:id", (req, res) => {
     });
 });
 
+// Get Student
+app.get('/student', (req, res) => {
+    const sql = "SELECT * FROM student_detail";
+    db.query(sql, (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        return res.json(result);
+    })
+})
+
 // Start Server
 app.listen(8081, () => {
     console.log("listening");

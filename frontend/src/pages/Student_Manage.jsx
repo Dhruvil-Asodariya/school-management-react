@@ -1,53 +1,57 @@
 import { Link } from "react-router-dom";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { useState } from "react";
+// import { useState } from "react";
 import DataTable from "react-data-table-component";
 import Button from "../components/Button";
 import Reg_Title from "../components/Reg_Title";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const StudentManage = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [data, setData] = useState([]);
+
+  const fetchData = async () => {
+    try {
+      const res = await axios.get("http://localhost:8081/student");
+      setData(res.data);
+    } catch (err) {
+      console.error("Error fetching Student:", err);
+    }
+  };
+
+  // ✅ Fetch Data When Component Mounts
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  console.log(data);
 
   // Sample Student Data
-  const students = [
-    {
-      id: 1,
-      name: "Tiger Nixon",
-      education: "M.COM, P.H.D.",
-      mobile: "123 456 7890",
-      email: "info@example.com",
-      admissionDate: "2011/04/25",
-    },
-    {
-      id: 2,
-      name: "Garrett Winters",
-      education: "M.COM, P.H.D.",
-      mobile: "987 654 3210",
-      email: "info@example.com",
-      admissionDate: "2011/07/25",
-    },
-    {
-      id: 3,
-      name: "Ashton Cox",
-      education: "B.COM, M.COM.",
-      mobile: "(123) 4567 890",
-      email: "info@example.com",
-      admissionDate: "2009/01/12",
-    },
-  ];
+  const students = data.map((student, index) => ({
+    id: index,
+    profile: student.image,
+    rollNo: student.roll_no,
+    firstName: student.first_name,
+    lastName: student.last_name,
+    email: student.email,
+    gender: student.gender,
+    phone_number: student.phone_number,
+    class: student.class_id,
+    admissionDate: student.admission_date,
+  }));
 
   // Table Columns
   const columns = [
-    { name: "Roll No.", selector: (row, index) => index + 1, sortable: true },
-    { name: "Name", selector: (row) => row.name, sortable: true },
-    { name: "Education", selector: (row) => row.education, sortable: true },
-    { name: "Mobile", selector: (row) => row.mobile, sortable: true },
-    { name: "Email", selector: (row) => row.email, sortable: true },
-    {
-      name: "Admission Date",
-      selector: (row) => row.admissionDate,
-      sortable: true,
-    },
+    { name: "Profile", selector: (row) => <img src={row.profile} className="w-12 h-12 rounded-full" alt="Profile" />, sortable: false },
+    { name: "Roll No", selector: (row) => row.rollNo, sortable: true },
+    { name: "First Name", selector: (row) => row.firstName, sortable: true },
+    { name: "Last Name", selector: (row) => row.lastName, sortable: true },
+    { name: "Email", selector: (row) => <div title={row.email} className="overflow-hidden"> {row.email} </div>, sortable: true },
+    { name: "Gender", selector: (row) => row.gender, sortable: true },
+    { name: "Mobile", selector: (row) => row.phone_number, sortable: true },
+    { name: "Class", selector: (row) => row.class, sortable: true },
+    { name: "Admission Date", selector: (row) => <div title={row.admissionDate} className="overflow-hidden"> {row.admissionDate} </div>, sortable: true },
     {
       name: "Action",
       cell: () => (
@@ -86,7 +90,7 @@ const StudentManage = () => {
   // Filter Students
   const filteredStudents = students.filter((student) =>
     Object.values(student).some((value) =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 

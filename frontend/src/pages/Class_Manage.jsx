@@ -185,7 +185,7 @@ const Class = () => {
                         onClick={() => handleDeleteClick(Class.class_id)}
                       >
                         <FaTrash />
-                      </button>
+                      </button> 
                     </td>
                   </tr>
                 ))
