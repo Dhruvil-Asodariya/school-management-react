@@ -184,6 +184,22 @@ app.post("/student", upload.single("image"), (req, res) => {
     });
 });
 
+// Delete Student
+
+app.delete("/student/:id", (req, res) => {
+    const { id } = req.params;
+
+    const sql = "DELETE FROM student_detail WHERE student_id = ?";
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("Error deleting student:", err);
+            return res.status(500).json({ error: "Failed to delete student" });
+        }
+        res.json({ message: "Student deleted successfully" });
+    });
+});
+
+
 // Start Server
 app.listen(8081, () => {
     console.log("listening");
