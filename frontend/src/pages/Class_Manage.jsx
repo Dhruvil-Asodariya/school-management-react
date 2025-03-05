@@ -191,7 +191,7 @@ const Class = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" className="text-center py-4">No subjects available</td>
+                  <td colSpan="3" className="text-center py-4">No classes available</td>
                 </tr>
               )}
             </tbody>

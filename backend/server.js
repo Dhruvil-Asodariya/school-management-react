@@ -1,10 +1,13 @@
 const express = require('express')
 const mysql = require('mysql')
 const cors = require('cors')
+const multer = require("multer");
+const path = require("path");
 
 const app = express()
 app.use(cors())
 app.use(express.json())
+app.use(express.static("uploads")); // Serve uploaded images
 
 const db = mysql.createConnection({
     host: "localhost",
@@ -12,6 +15,23 @@ const db = mysql.createConnection({
     password: "",
     database: "sm_system"
 })
+
+db.connect((err) => {
+    if (err) {
+        console.error("Database connection failed: ", err);
+    } else {
+        console.log("Connected to database");
+    }
+});
+
+const storage = multer.diskStorage({
+    destination: path.join(__dirname, "../frontend/public"),
+    filename: (req, file, cb) => {
+        const studentName = req.body.firstName + "_" + req.body.lastName;
+        const uniqueSuffix = Date.now();
+        cb(null, studentName + "_" + uniqueSuffix + path.extname(file.originalname));
+    },
+});
 
 // Get All Subject 
 app.get('/subject', (req, res) => {
@@ -139,6 +159,30 @@ app.get('/student', (req, res) => {
         return res.json(result);
     })
 })
+
+// Add New Student
+
+const upload = multer({ storage: storage });
+app.post("/student", upload.single("image"), (req, res) => {
+    const { firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, class: studentClass } = req.body;
+    const image = req.file ? req.file.filename : null;
+    const addmission_date = new Date().toISOString().slice(0, 10);
+
+    if (!image) {
+        return res.status(400).json({ message: "Image upload failed" });
+    }
+
+    const sql = "INSERT INTO student_detail (first_name, last_name, email, phone_number, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    const values = [firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, addmission_date, image];
+
+    db.query(sql, values, (err, result) => {
+        if (err) {
+            console.error("Error inserting student: ", err);
+            return res.status(500).json({ message: "Database error" });
+        }
+        res.status(201).json({ message: "Student successfully added" });
+    });
+});
 
 // Start Server
 app.listen(8081, () => {

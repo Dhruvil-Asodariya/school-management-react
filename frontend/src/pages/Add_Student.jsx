@@ -38,24 +38,57 @@ const Add_Student = () => {
       firstName: "",
       lastName: "",
       email: "",
-      class: "",
       phoneNo: "",
       ephoneNo: "",
       dob: "",
-      gender: "",
       address: "",
+      gender: "",
+      class: "",
       image: null,
     },
     validationSchema,
-    onSubmit: () => {
-      Swal.fire({
-        title: "Success!",
-        text: "Student Successfully Added",
-        icon: "success",
-        timer: 1000,
-        showConfirmButton: false,
-        timerProgressBar: true,
-      }).then(() => navigate("/student_manage"));
+    onSubmit: async (values) => {
+      const formData = new FormData();
+      formData.append("firstName", values.firstName);
+      formData.append("lastName", values.lastName);
+      formData.append("email", values.email);
+      formData.append("phoneNo", values.phoneNo);
+      formData.append("ephoneNo", values.ephoneNo);
+      formData.append("dob", values.dob);
+      formData.append("address", values.address);
+      formData.append("gender", values.gender);
+      formData.append("class", values.class);
+      formData.append("image", values.image); // File upload
+  
+      try {
+        const response = await fetch("http://localhost:8081/student", {
+          method: "POST",
+          body: formData,
+        });
+  
+        const data = await response.json();
+        if (response.ok) {
+          Swal.fire({
+            title: "Success!",
+            text: "Student Successfully Added",
+            icon: "success",
+            timer: 1000,
+            showConfirmButton: false,
+            timerProgressBar: true,
+          }).then(() => navigate("/student_manage"));
+        } else {
+          throw new Error(data.message || "Something went wrong!");
+        }
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: error.message,
+          icon: "error",
+          timer: 2000,
+          showConfirmButton: false,
+          timerProgressBar: true,
+        });
+      }
     },
   });
 
@@ -216,9 +249,16 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               >
                 <option value="">Choose...</option>
-                <option value="Class1">Class 1</option>
-                <option value="Class2">Class 2</option>
-                <option value="Class3">Class 3</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
               </select>
               {formik.touched.class && formik.errors.class && (
                 <span className="text-red-500 text-sm">
