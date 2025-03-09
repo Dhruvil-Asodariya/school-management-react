@@ -230,7 +230,6 @@ const Add_Student = () => {
                 <option value="">Choose...</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-                <option value="Other">Other</option>
               </select>
               {formik.touched.gender && formik.errors.gender && (
                 <span className="text-red-500 text-sm">

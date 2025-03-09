@@ -184,6 +184,8 @@ app.post("/student", upload.single("image"), (req, res) => {
     });
 });
 
+// Update Student 
+
 // Delete Student
 
 app.delete("/student/:id", (req, res) => {
@@ -199,6 +201,65 @@ app.delete("/student/:id", (req, res) => {
     });
 });
 
+// Get Notes
+
+app.get('/note', (req, res) => {
+    const sql = "SELECT * FROM notes_detail";
+    db.query(sql, (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        return res.json(result);
+    })
+})
+
+// Add New nOTE
+app.post("/note", (req, res) => {
+    const { noteContent } = req.body;
+
+    if (!noteContent) {
+        return res.status(400).json({ message: "Note content is required" });
+    }
+
+    const sql = "INSERT INTO notes_detail (note_content) VALUES (?)";
+    db.query(sql, [noteContent], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({ message: "Note added successfully", id: result.insertId });
+    });
+});
+
+// Update Subject
+app.put("/note/:id", async (req, res) => {
+    const { noteContent } = req.body;
+    const { id } = req.params;
+
+    if (!noteContent) {
+        return res.status(400).json({ error: "Note content is required" });
+    }
+
+    try {
+        const sql = "UPDATE notes_detail SET note_content = ? WHERE note_id = ?";
+        await db.query(sql, [noteContent, id]);
+
+        res.json({ message: "Note updated successfully" });
+    } catch (error) {
+        res.status(500).json({ error: "Failed to update note" });
+    }
+});
+
+// Delete Subject
+app.delete("/note/:id", (req, res) => {
+    const { id } = req.params;
+
+    const sql = "DELETE FROM notes_detail WHERE note_id = ?";
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("Error deleting note:", err);
+            return res.status(500).json({ error: "Failed to delete note" });
+        }
+        res.json({ message: "Note deleted successfully" });
+    });
+});
 
 // Start Server
 app.listen(8081, () => {

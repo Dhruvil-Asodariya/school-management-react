@@ -11,7 +11,7 @@ const StudentManage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [data, setData] = useState([]);
 
-  // Get Student
+  // Fetch Students
   const fetchData = async () => {
     try {
       const res = await axios.get("http://localhost:8081/student");
@@ -25,7 +25,7 @@ const StudentManage = () => {
     fetchData();
   }, []);
 
-  // Delete Student
+  //Delete Student
   const handleDeleteClick = async (studentId) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -41,7 +41,7 @@ const StudentManage = () => {
       try {
         await axios.delete(`http://localhost:8081/student/${studentId}`);
         Swal.fire("Deleted!", "The student has been deleted.", "success");
-        fetchData(); // Refresh data after deletion
+        fetchData();
       } catch (error) {
         console.error("Error deleting student:", error);
         Swal.fire("Error!", "Failed to delete the student.", "error");
@@ -56,13 +56,16 @@ const StudentManage = () => {
     lastName: student.last_name,
     email: student.email,
     gender: student.gender,
+    dob: student.date_of_birth,
     phone_number: student.phone_number,
+    emr_phone_number: student.emrNumber,
+    address: student.address,
     class: student.class_id,
     admissionDate: student.admission_date,
   }));
 
   const columns = [
-    { name: "Profile", selector: (row) => <img src={row.profile} className="w-12 h-12 rounded-full" alt="Profile" />, sortable: false },
+    { name: "Profile", selector: (row) => <img src={row.profile} className="w-10 h-10 rounded-full" alt="Profile" />, sortable: false },
     { name: "Roll No", selector: (row, index) => index + 1, sortable: true },
     { name: "First Name", selector: (row) => row.firstName, sortable: true },
     { name: "Last Name", selector: (row) => row.lastName, sortable: true },
@@ -86,6 +89,12 @@ const StudentManage = () => {
     },
   ];
 
+  const filteredStudent = students.filter((faculty) =>
+    Object.values(faculty).some((value) =>
+      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  );
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <Reg_Title name="All Students List" />
@@ -106,7 +115,7 @@ const StudentManage = () => {
       <div className="bg-white shadow-lg rounded-lg overflow-hidden">
         <DataTable
           columns={columns}
-          data={students}
+          data={filteredStudent}
           pagination
           highlightOnHover
           striped
