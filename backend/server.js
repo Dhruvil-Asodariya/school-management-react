@@ -1,8 +1,10 @@
 const express = require('express')
+const session = require("express-session");
 const mysql = require('mysql')
 const cors = require('cors')
 const multer = require("multer");
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 const app = express()
 app.use(cors())
@@ -24,6 +26,25 @@ db.connect((err) => {
     }
 });
 
+// ✅ Nodemailer Configuration
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: "Your Email", // Replace with your email
+        pass: "Your pass-key", // Use App Password if 2FA is enabled
+    },
+});
+
+// Set up session
+app.use(
+    session({
+      secret: "mySecretKey", // Change this to a strong secret key
+      resave: false,
+      saveUninitialized: true,
+      cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
+    })
+  );
+
 const storage = multer.diskStorage({
     destination: path.join(__dirname, "../frontend/public"),
     filename: (req, file, cb) => {
@@ -31,6 +52,17 @@ const storage = multer.diskStorage({
         const uniqueSuffix = Date.now();
         cb(null, studentName + "_" + uniqueSuffix + path.extname(file.originalname));
     },
+});
+
+//Login
+app.post("/login", (req, res) => {
+    const { userName } = req.body;
+    const { password } = req.body;
+
+    const salt = bcrypt.genSalt(10); // Generate Salt
+    const hash_password = bcrypt.hash(password, salt); // Hash Password
+
+
 });
 
 // Get All Subject 
@@ -167,6 +199,10 @@ app.post("/student", upload.single("image"), (req, res) => {
     const { firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, class: studentClass } = req.body;
     const image = req.file ? req.file.filename : null;
     const addmission_date = new Date().toISOString().slice(0, 10);
+    const userName = email.split("@")[0];
+    const password = Math.floor(100000 + Math.random() * 900000);
+    const salt = bcrypt.genSalt(10); // Generate Salt
+    const hash_password = bcrypt.hash(password, salt); // Hash Password
 
     if (!image) {
         return res.status(400).json({ message: "Image upload failed" });
@@ -181,6 +217,14 @@ app.post("/student", upload.single("image"), (req, res) => {
             return res.status(500).json({ message: "Database error" });
         }
         res.status(201).json({ message: "Student successfully added" });
+    });
+
+    const login_sql = "INSERT INTO user_detail (user_name, password, role, status) VALUES (?, ?, ?, ?)";
+    db.query(login_sql, [userName, hash_password,], (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({ message: "Class added successfully", id: result.insertId });
     });
 });
 
@@ -228,7 +272,7 @@ app.post("/note", (req, res) => {
     });
 });
 
-// Update Subject
+// Update Note
 app.put("/note/:id", async (req, res) => {
     const { noteContent } = req.body;
     const { id } = req.params;
@@ -247,7 +291,7 @@ app.put("/note/:id", async (req, res) => {
     }
 });
 
-// Delete Subject
+// Delete Note
 app.delete("/note/:id", (req, res) => {
     const { id } = req.params;
 
@@ -260,6 +304,71 @@ app.delete("/note/:id", (req, res) => {
         res.json({ message: "Note deleted successfully" });
     });
 });
+
+// Get Leave
+app.get('/leave', (req, res) => {
+    const sql = "SELECT * FROM leave_detail";
+    db.query(sql, (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        return res.json(result);
+    })
+})
+
+// Add New Leave
+// app.post("/leave", (req, res) => {
+//     const { leaveReason, leaveFrom, leaveTo } = req.body;
+
+//     if (!leaveReason && !leaveFrom && !leaveTo) {
+//         return res.status(400).json({ message: "Leave detail is required" });
+//     }
+
+//     const sql = "INSERT INTO leave_detail (leave_reason, ) VALUES (?)";
+//     db.query(sql, [subjectName], (err, result) => {
+//         if (err) {
+//             return res.status(500).json({ error: err.message });
+//         }
+//         res.status(201).json({ message: "Subject added successfully", id: result.insertId });
+//     });
+// });
+
+//Update Status on Leave
+app.patch("/leave/:id", (req, res) => {
+    const { id } = req.params;
+    const { status, email, fullName } = req.body; // Get email & name from frontend
+
+    if (typeof status !== "number") {
+        return res.status(400).json({ error: "Invalid status value" });
+    }
+
+    const sql = "UPDATE leave_detail SET status = ? WHERE leave_id = ?";
+    db.query(sql, [status, id], (err, result) => {
+        if (err) {
+            console.error("Error updating leave status:", err);
+            return res.status(500).json({ error: "Database update failed" });
+        }
+
+        // ✅ If status is Active (1), send an email
+        if (status === 1) {
+            const mailOptions = {
+                from: "Your-email",
+                to: email,
+                subject: "Leave Request Approved ✅",
+                text: `Hello ${fullName},\n\nYour leave request has been approved!\n\nThank you.`,
+            };
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error("Error sending email:", error);
+                    return res.status(500).json({ error: "Email sending failed" });
+                }
+                console.log("Email sent:", info.response);
+            });
+        }
+
+        res.json({ message: "Leave status updated successfully", status });
+    });
+});
+
 
 // Start Server
 app.listen(8081, () => {

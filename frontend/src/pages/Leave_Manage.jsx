@@ -1,35 +1,80 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DataTable from "react-data-table-component";
 import Reg_Title from "../components/Reg_Title";
+import axios from "axios";
+import Swal from "sweetalert2";
 
 const Leave_Manage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [leaveData, setLeaveData] = useState([
-    {
-      id: 1,
-      fullName: "Virani Jaydeep",
-      email: "jvirani820@rku.ac.in",
-      reason: "Leave Demo",
-      days: 1,
-      appliedOn: "2023-02-04",
-      role: "Student",
-      status: true,
-    },
-    {
-      id: 2,
-      fullName: "Virani Jaydeep",
-      email: "jaydeepvirani677@gmail.com",
-      reason: "Faculty Leave",
-      days: 2,
-      appliedOn: "2023-02-04",
-      role: "Faculty",
-      status: false,
-    },
-  ]);
+  const [leaveData, setLeaveData] = useState([]);
 
-  // Table Columns
+  // Get Leave list
+  const fetchData = async () => {
+    try {
+      const res = await axios.get("http://localhost:8081/leave");
+      const formattedData = res.data.map((leave) => ({
+        id: leave.leave_id,
+        fullName: leave.full_name,
+        email: leave.email,
+        reason: leave.leave_reason,
+        days: leave.leave_day,
+        appliedOn: leave.applyed_on,
+        role: leave.role,
+        status: leave.status,
+      }));
+      setLeaveData(formattedData);
+    } catch (err) {
+      console.error("Error fetching leave data:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Update Status
+  const handleStatusChange = async (id, currentStatus, email, full_name) => {
+    const newStatus = currentStatus ? 0 : 1; // Convert boolean to 0 or 1
+    const leave_email = email;
+    const leave_full_name = full_name;
+    try {
+      await axios.patch(`http://localhost:8081/leave/${id}`, {
+        status: newStatus,
+        email: leave_email,
+        fullName: leave_full_name,
+      });
+  
+      // Update UI after a successful response
+      const updatedLeaveData = leaveData.map((item) =>
+        item.id === id ? { ...item, status: newStatus } : item
+      );
+      setLeaveData(updatedLeaveData);
+  
+      // Show Swal success message
+      Swal.fire({
+        title: "Success!",
+        text: `Leave status updated to ${newStatus ? "Active" : "Inactive"}.`,
+        icon: "success",
+        confirmButtonColor: "#3085d6",
+        confirmButtonText: "OK",
+      });
+    } catch (err) {
+      console.error("Error updating leave status:", err);
+  
+      // Show error message if the update fails
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update leave status.",
+        icon: "error",
+        confirmButtonColor: "#d33",
+        confirmButtonText: "Try Again",
+      });
+    }
+  };
+  
+
   const columns = [
-    { name: "#", selector: (row, index) => index + 1, sortable: true },
+    { name: "Sr No.", selector: (row, index) => index + 1, sortable: true },
     { name: "Full Name", selector: (row) => row.fullName, sortable: true },
     { name: "Email", selector: (row) => row.email, sortable: true },
     { name: "Leave Reason", selector: (row) => row.reason, sortable: true },
@@ -44,22 +89,21 @@ const Leave_Manage = () => {
             <input
               type="checkbox"
               className="sr-only peer"
-              checked={row.status}
-              onChange={() => {
-                const updatedLeaveData = leaveData.map((item) =>
-                  item.id === row.id ? { ...item, status: !item.status } : item
-                );
-                setLeaveData(updatedLeaveData);
-              }}
+              checked={row.status === 1} // Convert DB value (1 or 0) to boolean
+              onChange={() => handleStatusChange(row.id, row.status, row.email, row.fullName)}
             />
             <div
               className={`relative w-11 h-6 rounded-full peer dark:bg-gray-700 peer-focus:ring-4
-              ${row.status ? 'bg-green-600 peer-checked:bg-green-600 border-green-600 peer-focus:ring-green-300 dark:peer-focus:ring-green-800' : 'bg-red-600 peer-checked:bg-red-600 border-red-600 peer-focus:ring-red-300 dark:peer-focus:ring-red-800'}
+              ${row.status
+                  ? "bg-green-600 peer-checked:bg-green-600 border-green-600 peer-focus:ring-green-300 dark:peer-focus:ring-green-800"
+                  : "bg-red-600 peer-checked:bg-red-600 border-red-600 peer-focus:ring-red-300 dark:peer-focus:ring-red-800"
+                }
               peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600`}
             ></div>
           </label>
           <span
-            className={`text-sm font-medium ${row.status ? 'text-green-600' : 'text-red-600'}`}
+            className={`text-sm font-medium ${row.status ? "text-green-600" : "text-red-600"
+              }`}
           >
             {row.status ? "Active" : "Inactive"}
           </span>
