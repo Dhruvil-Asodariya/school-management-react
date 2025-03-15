@@ -3,15 +3,17 @@ import * as Yup from "yup";
 import Swal from "sweetalert2";
 import { Link } from "react-router-dom";
 import axios from "axios";
+import { useEffect, useState } from "react";
 
 const Login = () => {
-
+  const [error, setError] = useState(""); // To store error messages
+  const [userSession, setUserSession] = useState(null);
 
   const validationSchema = Yup.object({
     userName: Yup.string().required("Please enter user name"),
     password: Yup.string()
-      .length(6, "Password must be at least 6 characters")
-      .required("Please enter your assword"),
+      .min(6, "Password must be at least 6 characters")
+      .required("Please enter your password"),
   });
 
   const formik = useFormik({
@@ -21,38 +23,51 @@ const Login = () => {
     },
     validationSchema,
     onSubmit: async (values) => {
+      setError(""); // Reset error before submitting
       try {
-        await axios.post("http://localhost:8081/login", {
+        const res = await axios.post("http://localhost:8081/login", {
           userName: values.userName,
           password: values.password,
-        });
+        }, { withCredentials: true });
 
         Swal.fire({
           title: "Success!",
-          text: "Successfully login",
+          text: res.data.message,
           icon: "success",
           timer: 1000,
           showConfirmButton: true,
           timerProgressBar: true,
         }).then(() => {
           formik.resetForm();
+          checkSession();
         });
 
       } catch (error) {
-        console.error("Error in login", error);
-        Swal.fire({
-          title: "Error!",
-          text: "Failed to login",
-          icon: "error",
-          showConfirmButton: true,
-        });
+        if (error.response && error.response.data) {
+          setError(error.response.data.error); // Set specific error message
+        } else {
+          setError("An unknown error occurred.");
+        }
       }
     },
   });
 
+  // ✅ Function to Check Active Session
+  const checkSession = async () => {
+    try {
+      const response = await axios.get("http://localhost:8081/session", { withCredentials: true });
+      setUserSession(response.data);
+    } catch (error) {
+      console.error("No Active Session:", error.response?.data || error);
+    }
+  };
+
+  useEffect(() => {
+    checkSession();
+  }, []);
+
   return (
     <div className="flex h-screen">
-      {/* Left Section */}
       <div className="w-full md:w-1/4 flex flex-col justify-center items-center px-6 md:px-12 lg:px-24">
         <div className="mb-6">
           <img src="./Logo/1.png" alt="Logo" />
@@ -87,6 +102,10 @@ const Login = () => {
               <span className="text-red-500 text-sm">{formik.errors.password}</span>
             )}
           </div>
+
+          {/* ✅ Show error message if exists */}
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
@@ -101,9 +120,18 @@ const Login = () => {
             Forgot Password?
           </Link>
         </p>
+
+        {/* ✅ Show Session Data */}
+        {userSession && (
+          <div className="mt-4 p-4 bg-green-100 rounded-lg">
+            <h3 className="text-lg font-semibold">Active Session:</h3>
+            <p><b>User:</b> {userSession.user.userName}</p>
+            <p><b>Role:</b> {userSession.user.role}</p>
+            <p><b>Message:</b> {userSession.message}</p>
+          </div>
+        )}
       </div>
 
-      {/* Right Section - 75% Width with Opacity */}
       <div className="md:w-3/4 relative">
         <div className="absolute inset-0 bg-black opacity-50"></div>
         <div

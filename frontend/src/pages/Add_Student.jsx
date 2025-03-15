@@ -1,11 +1,13 @@
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import Form_Title from "../components/Form_Title";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Add_Student = () => {
+
   const navigate = useNavigate();
 
   const validationSchema = Yup.object({
@@ -48,48 +50,47 @@ const Add_Student = () => {
     },
     validationSchema,
     onSubmit: async (values) => {
-      const formData = new FormData();
-      formData.append("firstName", values.firstName);
-      formData.append("lastName", values.lastName);
-      formData.append("email", values.email);
-      formData.append("phoneNo", values.phoneNo);
-      formData.append("ephoneNo", values.ephoneNo);
-      formData.append("dob", values.dob);
-      formData.append("address", values.address);
-      formData.append("gender", values.gender);
-      formData.append("class", values.class);
-      formData.append("image", values.image); // File upload
-  
       try {
-        const response = await fetch("http://localhost:8081/student", {
-          method: "POST",
-          body: formData,
+        const formData = new FormData();
+        formData.append("firstName", values.firstName);
+        formData.append("lastName", values.lastName);
+        formData.append("email", values.email);
+        formData.append("phoneNo", values.phoneNo);
+        formData.append("ephoneNo", values.ephoneNo);
+        formData.append("dob", values.dob);
+        formData.append("address", values.address);
+        formData.append("gender", values.gender);
+        formData.append("class", values.class);
+        formData.append("image", values.image); // Append file
+
+        await axios.post("http://localhost:8081/student", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         });
-  
-        const data = await response.json();
-        if (response.ok) {
-          Swal.fire({
-            title: "Success!",
-            text: "Student Successfully Added",
-            icon: "success",
-            timer: 1000,
-            showConfirmButton: false,
-            timerProgressBar: true,
-          }).then(() => navigate("/student_manage"));
-        } else {
-          throw new Error(data.message || "Something went wrong!");
-        }
+
+        Swal.fire({
+          title: "Success!",
+          text: "New student successfully added",
+          icon: "success",
+          timer: 1000,
+          showConfirmButton: true,
+          timerProgressBar: true,
+        }).then(() => {
+          formik.resetForm();
+          navigate("/student_manage");
+        });
+
       } catch (error) {
+        console.error("Error adding student:", error);
         Swal.fire({
           title: "Error!",
-          text: error.message,
+          text: "Failed to add student",
           icon: "error",
-          timer: 2000,
-          showConfirmButton: false,
-          timerProgressBar: true,
+          showConfirmButton: true,
         });
       }
-    },
+    }
   });
 
   return (

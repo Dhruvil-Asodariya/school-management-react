@@ -3,11 +3,17 @@ const session = require("express-session");
 const mysql = require('mysql')
 const cors = require('cors')
 const multer = require("multer");
+const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
 
 const app = express()
-app.use(cors())
+// Middleware
+app.use(cors({
+    origin: "http://localhost:5173", // React frontend URL
+    credentials: true, // Allow sending cookies
+}));
 app.use(express.json())
 app.use(express.static("uploads")); // Serve uploaded images
 
@@ -35,16 +41,6 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-// Set up session
-app.use(
-    session({
-      secret: "mySecretKey", // Change this to a strong secret key
-      resave: false,
-      saveUninitialized: true,
-      cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
-    })
-  );
-
 const storage = multer.diskStorage({
     destination: path.join(__dirname, "../frontend/public"),
     filename: (req, file, cb) => {
@@ -54,15 +50,74 @@ const storage = multer.diskStorage({
     },
 });
 
+const material_storage = multer.diskStorage({
+    destination: path.join(__dirname, "../frontend/public/material"),
+    filename: (req, file, cb) => {
+        const material_name = req.body.materialTitle + " " + req.body.chapter; // Fix: Use `chapter`, not `selectedChapters`
+        cb(null, material_name + path.extname(file.originalname));
+    },
+});
+
+// Set up session
+app.use(
+    session({
+        secret: "mySecretKey", // Change this to a strong secret key
+        resave: false,
+        saveUninitialized: true,
+        cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
+    })
+);
+
 //Login
+
 app.post("/login", (req, res) => {
-    const { userName } = req.body;
-    const { password } = req.body;
+    const { userName, password } = req.body;
 
-    const salt = bcrypt.genSalt(10); // Generate Salt
-    const hash_password = bcrypt.hash(password, salt); // Hash Password
+    const sql = "SELECT * FROM user_detail WHERE user_name = ?";
+
+    db.query(sql, [userName], async (err, result) => {
+        if (err) {
+            console.error("Database Error:", err);
+            return res.status(500).json({ error: "Server error" });
+        }
+
+        if (result.length === 0) {
+            return res.status(401).json({ error: "Username not registered" });
+        }
+
+        const user = result[0]; // Get user data from the query result
+        const hashedPassword = user.password; // Get stored hashed password
+
+        // Compare password
+        const isMatch = await bcrypt.compare(password, hashedPassword);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Incorrect password" });
+        }
+
+        // ✅ Store User Data in Session
+        req.session.user = {
+            userName: user.user_name,
+            email: user.user_name,
+            role: user.role
+        };
+        req.session.message = "Welcome, " + userName;
+
+        return res.json({
+            message: "Login successful",
+            user: req.session.user
+        });
+    });
+});
 
 
+
+
+// ✅ Session Route (Get Session Data)
+app.get("/session", (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ message: "No active session" });
+    }
+    res.json({ user: req.session.user });
 });
 
 // Get All Subject 
@@ -73,6 +128,7 @@ app.get('/subject', (req, res) => {
         return res.json(result);
     })
 })
+
 
 // Add New Subject
 app.post("/subject", (req, res) => {
@@ -195,37 +251,65 @@ app.get('/student', (req, res) => {
 // Add New Student
 
 const upload = multer({ storage: storage });
-app.post("/student", upload.single("image"), (req, res) => {
-    const { firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, class: studentClass } = req.body;
-    const image = req.file ? req.file.filename : null;
-    const addmission_date = new Date().toISOString().slice(0, 10);
-    const userName = email.split("@")[0];
-    const password = Math.floor(100000 + Math.random() * 900000);
-    const salt = bcrypt.genSalt(10); // Generate Salt
-    const hash_password = bcrypt.hash(password, salt); // Hash Password
 
-    if (!image) {
-        return res.status(400).json({ message: "Image upload failed" });
+app.post("/student", upload.single("image"), async (req, res) => {
+    try {
+        console.log("Body Data:", req.body);
+        console.log("File Data:", req.file);
+
+        const { firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, class: studentClass } = req.body;
+        const image = req.file ? req.file.filename : null;
+        if (!image) return res.status(400).json({ message: "Image upload failed" });
+
+        const admission_date = new Date().toISOString().slice(0, 10);
+        const userName = email.split("@")[0];
+        const password = Math.floor(100000 + Math.random() * 900000).toString();; // Password should be a string
+        const salt = await bcrypt.genSalt(10); // Await here
+        const hash_password = await bcrypt.hash(password, salt); // Await here
+        const role = "1";
+        const fullName = firstName + " " + lastName;
+
+        const sql = `INSERT INTO student_detail 
+                     (first_name, last_name, email, phone_number, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const values = [firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image];
+
+        db.query(sql, values, (err, result) => {
+            if (err) {
+                console.error("Error inserting student:", err);
+                return res.status(500).json({ message: "Database error" });
+            }
+
+            const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
+            const user_values = [userName, hash_password, role];
+            db.query(user_sql, user_values, (err, result) => {
+                if (err) {
+                    return res.status(500).json({ error: err.message });
+                }
+                res.status(201).json({ message: "Student and user added successfully", id: result.insertId });
+
+
+                const mailOptions = {
+                    from: "Your Email",
+                    to: email,
+                    subject: "Account Registered Successfully 🎉",
+                    text: `Hello ${fullName},\n\nYour account has been successfully registered.\n\nHere are your login credentials:\nUsername: ${userName}\nPassword: ${password}\n\nPlease keep this information safe and do not share it with anyone.\n\nThank you!`,
+                };
+
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error("Error sending email:", error);
+                        return res.status(500).json({ error: "Email sending failed" });
+                    }
+                    console.log("Email sent:", info.response);
+                });
+            });
+        });
+
+    } catch (error) {
+        console.error("Server Error:", error);
+        res.status(500).json({ message: "Server error" });
     }
-
-    const sql = "INSERT INTO student_detail (first_name, last_name, email, phone_number, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-    const values = [firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, addmission_date, image];
-
-    db.query(sql, values, (err, result) => {
-        if (err) {
-            console.error("Error inserting student: ", err);
-            return res.status(500).json({ message: "Database error" });
-        }
-        res.status(201).json({ message: "Student successfully added" });
-    });
-
-    const login_sql = "INSERT INTO user_detail (user_name, password, role, status) VALUES (?, ?, ?, ?)";
-    db.query(login_sql, [userName, hash_password,], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.status(201).json({ message: "Class added successfully", id: result.insertId });
-    });
 });
 
 // Update Student 
@@ -235,13 +319,39 @@ app.post("/student", upload.single("image"), (req, res) => {
 app.delete("/student/:id", (req, res) => {
     const { id } = req.params;
 
-    const sql = "DELETE FROM student_detail WHERE student_id = ?";
-    db.query(sql, [id], (err, result) => {
+    const getImageSql = "SELECT image FROM student_detail WHERE student_id = ?";
+    db.query(getImageSql, [id], (err, result) => {
         if (err) {
-            console.error("Error deleting student:", err);
+            console.error("Error fetching student image:", err);
             return res.status(500).json({ error: "Failed to delete student" });
         }
-        res.json({ message: "Student deleted successfully" });
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: "Student not found" });
+        }
+
+        const imagePath = result[0].image; // Assuming "image" is the column storing the file path
+
+
+        const sql = "DELETE FROM student_detail WHERE student_id = ?";
+        db.query(sql, [id], (err, result) => {
+            if (err) {
+                console.error("Error deleting student:", err);
+                return res.status(500).json({ error: "Failed to delete student" });
+            }
+
+            // 3️⃣ **Delete the Image File from `public` Folder**
+            if (imagePath) {
+                const fullPath = path.join(__dirname, "../frontend/public", imagePath); // Adjust path
+                fs.unlink(fullPath, (err) => {
+                    if (err && err.code !== "ENOENT") {
+                        console.error("Error deleting profile image:", err);
+                    }
+                });
+            }
+
+            res.json({ message: "Student deleted successfully" });
+        });
     });
 });
 
@@ -255,7 +365,7 @@ app.get('/note', (req, res) => {
     })
 })
 
-// Add New nOTE
+// Add New Note
 app.post("/note", (req, res) => {
     const { noteContent } = req.body;
 
@@ -322,12 +432,12 @@ app.get('/leave', (req, res) => {
 //         return res.status(400).json({ message: "Leave detail is required" });
 //     }
 
-//     const sql = "INSERT INTO leave_detail (leave_reason, ) VALUES (?)";
+//     const sql = "INSERT INTO leave_detail (full_name, email, leave_reason, leave_from, leave_to, applyed_on,) VALUES (?)";
 //     db.query(sql, [subjectName], (err, result) => {
 //         if (err) {
 //             return res.status(500).json({ error: err.message });
 //         }
-//         res.status(201).json({ message: "Subject added successfully", id: result.insertId });
+//         res.status(201).json({ message: "Leave added successfully", id: result.insertId });
 //     });
 // });
 
@@ -369,6 +479,66 @@ app.patch("/leave/:id", (req, res) => {
     });
 });
 
+//Get Material
+
+app.get('/material', (req, res) => {
+    const sql = "SELECT * FROM material_detail";
+    db.query(sql, (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        return res.json(result);
+    })
+})
+
+// Add New Material
+
+const material_upload = multer({ storage: material_storage });
+
+// ✅ API Route to Upload Material
+app.post("/material", material_upload.single("file"), async (req, res) => {
+    try {
+        console.log("Body Data:", req.body);
+        console.log("File Data:", req.file);
+
+        const { materialTitle, class: materialClass, subject, chapter } = req.body;
+        const file = req.file ? req.file.filename : null; // Fix: Use `filename`, not `materialname`
+
+        if (!file) return res.status(400).json({ message: "File upload failed" });
+
+        const sql = `INSERT INTO material_detail 
+                 (material_title, class, subject, chapter, material_file) 
+                 VALUES (?, ?, ?, ?, ?)`;
+        const values = [materialTitle, materialClass, subject, chapter, file]; // Fix: Use `file`, not `image`
+
+        db.query(sql, values, (err, result) => {
+            if (err) {
+                console.error("Error inserting material:", err);
+                return res.status(500).json({ message: "Database error" });
+            }
+            res.json({ message: "Material uploaded successfully" });
+        });
+
+    } catch (error) {
+        console.error("Server Error:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+const MATERIALS_DIR = path.join(__dirname, "../frontend/public/material");
+
+app.use("/material", express.static(MATERIALS_DIR));
+
+// ✅ API to Download a File
+app.get("/download/:fileName", (req, res) => {
+    const fileName = req.params.fileName;
+    const filePath = path.join(MATERIALS_DIR, fileName);
+
+    res.download(filePath, fileName, (err) => {
+        if (err) {
+            console.error("Error downloading file:", err);
+            res.status(500).json({ message: "File not found" });
+        }
+    });
+});
 
 // Start Server
 app.listen(8081, () => {
