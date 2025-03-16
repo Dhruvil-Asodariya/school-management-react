@@ -4,6 +4,7 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import Button from "../components/Button";
 import Form_Title from "../components/Form_Title";
+import axios from "axios";
 
 const Add_Holiday = () => {
   const navigate = useNavigate();
@@ -21,19 +22,34 @@ const Add_Holiday = () => {
       date: "",
     },
     validationSchema,
-    onSubmit: () => {
-      Swal.fire({
-        title: "Success!",
-        text: "Add New Holiday Successfully",
-        icon: "success",
-        timer: 2000,
-        showConfirmButton: true,
-        timerProgressBar: true,
-      });
+    onSubmit: async (values) => {
+      try {
+        await axios.post("http://localhost:8081/holiday", {
+          holidayName: values.holidayName,
+          date: values.date,
+        });
 
-      setTimeout(() => {
-        navigate("/holiday");
-      }, 2000);
+        Swal.fire({
+          title: "Success!",
+          text: "New holiday successfully added",
+          icon: "success",
+          timer: 1000,
+          showConfirmButton: true,
+          timerProgressBar: true,
+        }).then(() => {
+          formik.resetForm();
+          navigate("/holiday");
+        });
+
+      } catch (error) {
+        console.error("Error adding holiday:", error);
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to add holiday",
+          icon: "error",
+          showConfirmButton: true,
+        });
+      }
     },
   });
 

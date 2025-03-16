@@ -615,6 +615,96 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
     }
 });
 
+// Add New Holiday
+app.post("/holiday", (req, res) => {
+    const { holidayName, date } = req.body;
+
+    if (!holidayName || !date) {
+        return res.status(400).json({ message: "Holiday name and date are required" });
+    }
+
+    const parsedDate = new Date(date); // Convert string to Date object
+
+    if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+    }
+
+    const monthNumber = parsedDate.getMonth() + 1; // Convert zero-based month to 1-based
+
+    const sql = "INSERT INTO holiday_detail (month_id, holiday_name, holiday_date) VALUES (?, ?, ?)";
+    const values = [monthNumber, holidayName, date];
+
+    db.query(sql, values, (err, result) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({ message: "Holiday added successfully", id: result.insertId });
+    });
+});
+
+// Get Holiday
+app.get("/holiday/:month", (req, res) => {
+    const monthNumber = parseInt(req.params.month);
+
+    if (isNaN(monthNumber) || monthNumber < 1 || monthNumber > 12) {
+        return res.status(400).json({ message: "Invalid month number" });
+    }
+
+    const sql = "SELECT * FROM holiday_detail WHERE month_id = ? ORDER BY holiday_date";
+
+    db.query(sql, [monthNumber], (err, results) => {
+        if (err) {
+            console.error("Error fetching holidays:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        res.json(results);
+    });
+});
+
+// ✅ Update Holiday
+app.put("/holiday/:id", (req, res) => {
+    const holidayId = req.params.id;
+    const { holiday_name, holiday_date } = req.body;
+
+    if (!holiday_name || !holiday_date) {
+        return res.status(400).json({ message: "Holiday name and date are required" });
+    }
+
+    const parsedDate = new Date(holiday_date);
+
+    if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+    }
+
+    const monthNumber = parsedDate.getMonth() + 1;
+
+    const sql = "UPDATE holiday_detail SET month_id = ?, holiday_name = ?, holiday_date = ? WHERE holiday_id = ?";
+
+    db.query(sql, [monthNumber, holiday_name, holiday_date, holidayId], (err, result) => {
+        if (err) {
+            console.error("Error updating holiday:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Holiday not found" });
+        }
+
+        res.json({ message: "Holiday updated successfully" });
+    });
+});
+
+// 📌 Delete Holiday
+app.delete("/holiday/:id", (req, res) => {
+    const holiday_id = req.params.id;
+    const query = "DELETE FROM holiday_detail WHERE holiday_id = ?";
+
+    db.query(query, [holiday_id], (err, result) => {
+        if (err) return res.status(500).json({ error: "Failed to delete holiday!" });
+        res.json({ message: "Holiday deleted successfully!" });
+    });
+});
+
 
 // Start Server
 app.listen(8081, () => {
