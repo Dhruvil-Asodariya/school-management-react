@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import Form_Title from "../components/Form_Title";
+import axios from "axios";
 
 const Add_Faculty = () => {
   const navigate = useNavigate();
@@ -24,9 +25,9 @@ const Add_Faculty = () => {
       .length(10, "Phone number must be 10 digits")
       .required("Phone number is required"),
     ephoneNo: Yup.string()
-    .matches(/^\d+$/, "Only numbers are allowed")
-    .length(10, "Phone number must be 10 digits")
-    .required("Emergency Phone number is required"),
+      .matches(/^\d+$/, "Only numbers are allowed")
+      .length(10, "Phone number must be 10 digits")
+      .required("Emergency Phone number is required"),
     dob: Yup.string().required("Please enter Date Of Birth"),
     gender: Yup.string().required("Please select Gender"),
     address: Yup.string().required("Please enter Address"),
@@ -47,22 +48,41 @@ const Add_Faculty = () => {
       image: null,
     },
     validationSchema,
-    onSubmit: () => {
-      Swal.fire({
-        title: "Success!",
-        text: "Faculty Successfully Added",
-        icon: "success",
-        timer: 1000,
-        showConfirmButton: false,
-        timerProgressBar: true,
-      }).then(() => navigate("/faculty_manage"));
+    onSubmit: async (values) => {
+      try {
+        const formData = new FormData();
+        Object.keys(values).forEach((key) => {
+          formData.append(key, values[key]);
+        });
+
+        const res = await axios.post("http://localhost:8081/faculty", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        Swal.fire({
+          title: "Success!",
+          text: res.data.message,
+          icon: "success",
+          timer: 1000,
+          showConfirmButton: false,
+          timerProgressBar: true,
+        }).then(() => navigate("/faculty_manage"));
+      } catch (err) {
+        console.error("Error adding faculty:", err);
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to add faculty. Please try again.",
+          icon: "error",
+        });
+      }
     },
   });
+
 
   return (
     <div className="flex justify-center items-center">
       <div className="w-full bg-gray-10 shadow-lg rounded-lg p-6 mt-3">
-      <Form_Title name="Add New Faculty" />
+        <Form_Title name="Add New Faculty" />
         <form className="space-y-4" onSubmit={formik.handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -98,56 +118,56 @@ const Add_Faculty = () => {
               )}
             </div>
           </div>
+          <div>
+            <label className="block text-gray-700 font-medium pb-3">
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              {...formik.getFieldProps("email")}
+              className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
+            />
+            {formik.touched.email && formik.errors.email && (
+              <span className="text-red-500 text-sm">
+                {formik.errors.email}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 font-medium pb-3">
-                Email
+                Phone No.
               </label>
               <input
-                type="email"
-                name="email"
-                {...formik.getFieldProps("email")}
+                type="text"
+                name="phoneNo"
+                {...formik.getFieldProps("phoneNo")}
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               />
-              {formik.touched.email && formik.errors.email && (
+              {formik.touched.phoneNo && formik.errors.phoneNo && (
                 <span className="text-red-500 text-sm">
-                  {formik.errors.email}
+                  {formik.errors.phoneNo}
                 </span>
               )}
             </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-700 font-medium pb-3">
-                  Phone No.
-                </label>
-                <input
-                  type="text"
-                  name="phoneNo"
-                  {...formik.getFieldProps("phoneNo")}
-                  className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
-                />
-                {formik.touched.phoneNo && formik.errors.phoneNo && (
-                  <span className="text-red-500 text-sm">
-                    {formik.errors.phoneNo}
-                  </span>
-                )}
-              </div>
 
-              <div>
-                <label className="block text-gray-700 font-medium pb-3">
-                  Emergency Phone No.
-                </label>
-                <input
-                  type="text"
-                  name="ephoneNo"
-                  {...formik.getFieldProps("ephoneNo")}
-                  className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
-                />
-                {formik.touched.ephoneNo && formik.errors.ephoneNo && (
-                  <span className="text-red-500 text-sm">
-                    {formik.errors.ephoneNo}
-                  </span>
-                )}
-              </div>
+            <div>
+              <label className="block text-gray-700 font-medium pb-3">
+                Emergency Phone No.
+              </label>
+              <input
+                type="text"
+                name="ephoneNo"
+                {...formik.getFieldProps("ephoneNo")}
+                className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
+              />
+              {formik.touched.ephoneNo && formik.errors.ephoneNo && (
+                <span className="text-red-500 text-sm">
+                  {formik.errors.ephoneNo}
+                </span>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -247,7 +267,7 @@ const Add_Faculty = () => {
           </div>
 
           <div className="text-left">
-          <Button name="+ Add Faculty" />
+            <Button name="+ Add Faculty" />
           </div>
         </form>
       </div>

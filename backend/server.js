@@ -36,7 +36,7 @@ db.connect((err) => {
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "Your Email", // Replace with your email
+        user: "Your email", // Replace with your email
         pass: "Your pass-key", // Use App Password if 2FA is enabled
     },
 });
@@ -47,6 +47,15 @@ const storage = multer.diskStorage({
         const studentName = req.body.firstName + "_" + req.body.lastName;
         const uniqueSuffix = Date.now();
         cb(null, studentName + "_" + uniqueSuffix + path.extname(file.originalname));
+    },
+});
+
+const faculty_storage = multer.diskStorage({
+    destination: path.join(__dirname, "../frontend/public"),
+    filename: (req, file, cb) => {
+        const facultyName = req.body.firstName + "_" + req.body.lastName;
+        const uniqueSuffix = Date.now();
+        cb(null, facultyName + "_" + uniqueSuffix + path.extname(file.originalname));
     },
 });
 
@@ -539,6 +548,73 @@ app.get("/download/:fileName", (req, res) => {
         }
     });
 });
+
+const faculty_upload = multer({ storage });
+
+app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
+    try {
+        const { firstName, lastName, email, class: facultyClass, phoneNo, ephoneNo, dob, gender, address } = req.body;
+        const image = req.file ? req.file.filename : null;
+
+        const userName = email.split("@")[0];
+        const password = Math.floor(100000 + Math.random() * 900000).toString(); // Convert to string
+        const salt = await bcrypt.genSalt(10); // Await inside async function
+        const hash_password = await bcrypt.hash(password, salt); // Await inside async function
+        const role = "3";
+        const fullName = `${firstName} ${lastName}`;
+
+        // Insert faculty details into the database
+        const sql = `
+            INSERT INTO faculty_detail (first_name, last_name, email, class, phone_no, emr_phone_no, date_of_birth, gender, address, image)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [firstName, lastName, email, facultyClass, phoneNo, ephoneNo, dob, gender, address, image];
+
+        db.query(sql, values, (err, result) => {
+            if (err) {
+                console.error("Error inserting faculty:", err);
+                return res.status(500).json({ message: "Database error" });
+            }
+
+            const facultyId = result.insertId;
+            console.log(`Faculty added with ID: ${facultyId}`);
+
+            // Insert user details into user_detail table
+            const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
+            const user_values = [userName, hash_password, role];
+
+            db.query(user_sql, user_values, (err, result) => {
+                if (err) {
+                    console.error("Error inserting user:", err);
+                    return res.status(500).json({ message: "Error adding user" });
+                }
+
+                console.log(`User added with ID: ${result.insertId}`);
+                res.status(201).json({ message: "Faculty and user added successfully", facultyId });
+
+                // Send email after successful database entry
+                const mailOptions = {
+                    from: "Your email",
+                    to: email,
+                    subject: "Account Registered Successfully 🎉",
+                    text: `Hello ${fullName},\n\nYour account has been successfully registered.\n\nHere are your login credentials:\nUsername: ${userName}\nPassword: ${password}\n\nPlease keep this information safe and do not share it with anyone.\n\nThank you!`,
+                };
+
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error("Error sending email:", error);
+                    } else {
+                        console.log("Email sent:", info.response);
+                    }
+                });
+            });
+        });
+    } catch (error) {
+        console.error("Server error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 
 // Start Server
 app.listen(8081, () => {
