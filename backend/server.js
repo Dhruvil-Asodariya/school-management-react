@@ -705,6 +705,39 @@ app.delete("/holiday/:id", (req, res) => {
     });
 });
 
+app.get("/dashboard_totals", (req, res) => {
+    const queries = {
+      students: "SELECT COUNT(*) AS total FROM student_detail",
+      teachers: "SELECT COUNT(*) AS total FROM faculty_detail",
+      classes: "SELECT COUNT(*) AS total FROM class_detail",
+      subjects: "SELECT COUNT(*) AS total FROM subject_detail",
+    };
+  
+    let responseData = {};
+  
+    // Execute all queries
+    let completedQueries = 0;
+    for (let key in queries) {
+      db.query(queries[key], (err, results) => {
+        if (err) {
+          console.error(`Error fetching ${key} total:`, err);
+          return res.status(500).json({ error: "Database error" });
+        }
+  
+        // Extract total from result
+        responseData[key] = results[0].total;
+        completedQueries++;
+  
+        // Send response after all queries finish
+        if (completedQueries === Object.keys(queries).length) {
+          res.json(responseData);
+        }
+      });
+    }
+  });
+  
+  
+
 
 // Start Server
 app.listen(8081, () => {
