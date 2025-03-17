@@ -322,6 +322,27 @@ app.post("/student", upload.single("image"), async (req, res) => {
 });
 
 // Update Student 
+app.put("/student/:id", (req, res) => {
+    const { id } = req.params;
+    const { firstName, lastName, phone_number, emr_phone_number, dob, address, gender, class: studentClass } = req.body;
+
+    const query = `
+      UPDATE student_detail 
+      SET first_name = ?, last_name = ?, phone_number = ?, emrNumber = ?, date_of_birth = ?, address = ?, gender = ?, class_id = ?
+      WHERE student_id = ?
+    `;
+
+    db.query(query, [firstName, lastName, phone_number, emr_phone_number, dob, address, gender, studentClass, id], (err, result) => {
+        if (err) {
+            console.error("Error updating student:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Student not found" });
+        }
+        res.json({ message: "Student updated successfully!" });
+    });
+});
 
 // Delete Student
 
@@ -549,11 +570,21 @@ app.get("/download/:fileName", (req, res) => {
     });
 });
 
+// Get Faculty
+app.get('/faculty', (req, res) => {
+    const sql = "SELECT * FROM faculty_detail";
+    db.query(sql, (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        return res.json(result);
+    })
+})
+
+//Add Faculty
 const faculty_upload = multer({ storage });
 
 app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
     try {
-        const { firstName, lastName, email, class: facultyClass, phoneNo, ephoneNo, dob, gender, address } = req.body;
+        const { firstName, lastName, email, qualification, phoneNo, dob, gender, address, subjects } = req.body;
         const image = req.file ? req.file.filename : null;
 
         const userName = email.split("@")[0];
@@ -562,13 +593,18 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
         const hash_password = await bcrypt.hash(password, salt); // Await inside async function
         const role = "3";
         const fullName = `${firstName} ${lastName}`;
+        const join_date = new Date().toISOString().split("T")[0];
+        const today = new Date(); // Current date as Date object
+        const a_dob = new Date(dob); // Convert DOB string to Date object
+
+        const age = today.getFullYear() - a_dob.getFullYear();
 
         // Insert faculty details into the database
         const sql = `
-            INSERT INTO faculty_detail (first_name, last_name, email, class, phone_no, emr_phone_no, date_of_birth, gender, address, image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO faculty_detail (first_name, last_name, email, qualification, phone_no, age, date_of_birth, gender, address, subject, join_date, image)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const values = [firstName, lastName, email, facultyClass, phoneNo, ephoneNo, dob, gender, address, image];
+        const values = [firstName, lastName, email, qualification, phoneNo, age, dob, gender, address, subjects, join_date, image];
 
         db.query(sql, values, (err, result) => {
             if (err) {
@@ -614,6 +650,17 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 });
+
+// Update Faculty
+app.put("/faculty/:id", (req, res) => {
+    const { id } = req.params;
+    const { first_name, last_name, phone_no, gender, qualification, subject } = req.body;
+    const sql = `UPDATE faculty SET first_name=?, last_name=?, phone_no=?, gender=?, qualification=?, subject=?, WHERE faculty_id=?`;
+    db.query(sql, [first_name, last_name, phone_no, gender, qualification, subject, id], (err, result) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "Faculty Updated Successfully" });
+    });
+  });
 
 // Add New Holiday
 app.post("/holiday", (req, res) => {
@@ -707,36 +754,36 @@ app.delete("/holiday/:id", (req, res) => {
 
 app.get("/dashboard_totals", (req, res) => {
     const queries = {
-      students: "SELECT COUNT(*) AS total FROM student_detail",
-      teachers: "SELECT COUNT(*) AS total FROM faculty_detail",
-      classes: "SELECT COUNT(*) AS total FROM class_detail",
-      subjects: "SELECT COUNT(*) AS total FROM subject_detail",
+        students: "SELECT COUNT(*) AS total FROM student_detail",
+        teachers: "SELECT COUNT(*) AS total FROM faculty_detail",
+        classes: "SELECT COUNT(*) AS total FROM class_detail",
+        subjects: "SELECT COUNT(*) AS total FROM subject_detail",
     };
-  
+
     let responseData = {};
-  
+
     // Execute all queries
     let completedQueries = 0;
     for (let key in queries) {
-      db.query(queries[key], (err, results) => {
-        if (err) {
-          console.error(`Error fetching ${key} total:`, err);
-          return res.status(500).json({ error: "Database error" });
-        }
-  
-        // Extract total from result
-        responseData[key] = results[0].total;
-        completedQueries++;
-  
-        // Send response after all queries finish
-        if (completedQueries === Object.keys(queries).length) {
-          res.json(responseData);
-        }
-      });
+        db.query(queries[key], (err, results) => {
+            if (err) {
+                console.error(`Error fetching ${key} total:`, err);
+                return res.status(500).json({ error: "Database error" });
+            }
+
+            // Extract total from result
+            responseData[key] = results[0].total;
+            completedQueries++;
+
+            // Send response after all queries finish
+            if (completedQueries === Object.keys(queries).length) {
+                res.json(responseData);
+            }
+        });
     }
-  });
-  
-  
+});
+
+
 
 
 // Start Server

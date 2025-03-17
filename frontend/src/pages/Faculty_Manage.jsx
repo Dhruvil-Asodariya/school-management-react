@@ -1,58 +1,60 @@
 import { Link } from "react-router-dom";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DataTable from "react-data-table-component";
 import Button from "../components/Button";
 import Reg_Title from "../components/Reg_Title";
+import axios from "axios";
 
 const FacultyManage = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [data, setData] = useState([]);
 
-  // Sample Faculty Data
-  const faculty = [
-    {
-      id: 1,
-      name: "Tiger Nixon",
-      education: "M.COM, P.H.D.",
-      mobile: "123 456 7890",
-      email: "info@example.com",
-      admissionDate: "2011/04/25",
-    },
-    {
-      id: 2,
-      name: "Garrett Winters",
-      education: "M.COM, P.H.D.",
-      mobile: "987 654 3210",
-      email: "info@example.com",
-      admissionDate: "2011/07/25",
-    },
-    {
-      id: 3,
-      name: "Ashton Cox",
-      education: "B.COM, M.COM.",
-      mobile: "(123) 4567 890",
-      email: "info@example.com",
-      admissionDate: "2009/01/12",
-    },
-  ];
+  // Fetch Faculty Data
+  const fetchData = async () => {
+    try {
+      const res = await axios.get("http://localhost:8081/faculty");
+      setData(res.data);
+    } catch (err) {
+      console.error("Error fetching Faculty:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Prepare Faculty Data for Table
+  const faculty = data.map((faculty) => ({
+    id: faculty.faculty_id,
+    profile:faculty.image,
+    name: `${faculty.first_name} ${faculty.last_name}`,
+    email: faculty.email,
+    mobile: faculty.phone_no,
+    gender: faculty.gender,
+    education: faculty.qualification,
+    subject: faculty.subject,
+    joinDate: faculty.join_date,
+  }));
 
   // Table Columns
   const columns = [
-    { name: "Roll No.", selector: (row, index) => index + 1, sortable: true },
+    { name: "Profile", selector: (row) => <img src={row.profile} className="w-10 h-10 rounded-full" alt="Profile" />, sortable: false },
+    { name: "Sr No.", selector: (row, index) => index + 1, sortable: true },
     { name: "Name", selector: (row) => row.name, sortable: true },
-    { name: "Education", selector: (row) => row.education, sortable: true },
-    { name: "Mobile", selector: (row) => row.mobile, sortable: true },
     { name: "Email", selector: (row) => row.email, sortable: true },
-    {
-      name: "Admission Date",
-      selector: (row) => row.admissionDate,
-      sortable: true,
-    },
+    { name: "Mobile", selector: (row) => row.mobile, sortable: true },
+    { name: "Gender", selector: (row) => row.gender, sortable: true },
+    { name: "Education", selector: (row) => row.education, sortable: true },
+    { name: "Subject", selector: (row) => row.subject, sortable: true },
+    { name: "Join Date", selector: (row) => row.joinDate, sortable: true },
     {
       name: "Action",
       cell: () => (
         <div className="flex space-x-3">
-          <button className="text-blue-600 hover:text-blue-800">
+          <button
+            className="text-blue-600 hover:text-blue-800"
+          >
             <FaEdit />
           </button>
           <button className="text-red-600 hover:text-red-800">
@@ -63,27 +65,7 @@ const FacultyManage = () => {
     },
   ];
 
-  const customStyles = {
-    headCells: {
-      style: {
-        backgroundColor: "rgb(37, 99, 245)", // Blue-500 in Tailwind
-        color: "#ffffff",
-        fontWeight: "bold",
-        fontSize: "14px",
-        textAlign: "left",
-      },
-    },
-    rows: {
-      style: {
-        fontSize: "14px",
-        "&:hover": {
-          backgroundColor: "#f3f4f6", // Gray-100 in Tailwind
-        },
-      },
-    },
-  };
-
-  // Filter Students
+  // Filter Faculty Data
   const filteredFaculty = faculty.filter((faculty) =>
     Object.values(faculty).some((value) =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
@@ -98,7 +80,7 @@ const FacultyManage = () => {
       {/* Search Input */}
       <div className="mb-6 flex justify-between items-center">
         <Link to="/add_faculty">
-        <Button name="+ Add Faculty" />
+          <Button name="+ Add Faculty" />
         </Link>
         <input
           type="text"
@@ -118,7 +100,6 @@ const FacultyManage = () => {
           highlightOnHover
           striped
           responsive
-          customStyles={customStyles}
           className="text-gray-100"
         />
       </div>

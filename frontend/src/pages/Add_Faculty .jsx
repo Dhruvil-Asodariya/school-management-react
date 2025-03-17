@@ -19,15 +19,14 @@ const Add_Faculty = () => {
     email: Yup.string()
       .email("Please enter a valid Email address")
       .required("Please Enter Email"),
-    class: Yup.string().required("Please select Class"),
+    qualification: Yup.string().required("Please select Qualification"),
     phoneNo: Yup.string()
       .matches(/^\d+$/, "Only numbers are allowed")
       .length(10, "Phone number must be 10 digits")
       .required("Phone number is required"),
-    ephoneNo: Yup.string()
-      .matches(/^\d+$/, "Only numbers are allowed")
-      .length(10, "Phone number must be 10 digits")
-      .required("Emergency Phone number is required"),
+    subjects: Yup.array()
+      .min(1, "Please select at least one subject")
+      .required("Subjects are required"),
     dob: Yup.string().required("Please enter Date Of Birth"),
     gender: Yup.string().required("Please select Gender"),
     address: Yup.string().required("Please enter Address"),
@@ -39,9 +38,9 @@ const Add_Faculty = () => {
       firstName: "",
       lastName: "",
       email: "",
-      class: "",
+      qualification: "",
       phoneNo: "",
-      ephoneNo: "",
+      subjects: [],
       dob: "",
       gender: "",
       address: "",
@@ -153,19 +152,24 @@ const Add_Faculty = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Emergency Phone No.
-              </label>
-              <input
-                type="text"
-                name="ephoneNo"
-                {...formik.getFieldProps("ephoneNo")}
-                className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
-              />
-              {formik.touched.ephoneNo && formik.errors.ephoneNo && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.ephoneNo}
-                </span>
+              <label className="block text-gray-700 font-medium pb-3">Subjects</label>
+              <div className="flex flex-wrap gap-3">
+                {["Math", "Science", "English", "History", "Geography"].map((subject) => (
+                  <label key={subject} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="subjects"
+                      value={subject}
+                      checked={formik.values.subjects.includes(subject)}
+                      onChange={formik.handleChange}
+                      className="w-4 h-4"
+                    />
+                    <span>{subject}</span>
+                  </label>
+                ))}
+              </div>
+              {formik.touched.subjects && formik.errors.subjects && (
+                <span className="text-red-500 text-sm">{formik.errors.subjects}</span>
               )}
             </div>
           </div>
@@ -188,17 +192,23 @@ const Add_Faculty = () => {
             </div>
             <div>
               <label className="block text-gray-700 font-medium pb-3">
-                Address
+                Qualification
               </label>
-              <input
-                type="text"
-                name="address"
-                {...formik.getFieldProps("address")}
+              <select
+                name="qualification"
+                {...formik.getFieldProps("qualification")}
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
-              />
-              {formik.touched.address && formik.errors.address && (
+              >
+                <option>Choose...</option>
+                <option value="High School">High School</option>
+                <option value="Diploma">Diploma</option>
+                <option value="B-tech">B-tech</option>
+                <option value="M-tech">M-tech</option>
+                <option value="PhD">PhD</option>
+              </select>
+              {formik.touched.qualification && formik.errors.qualification && (
                 <span className="text-red-500 text-sm">
-                  {formik.errors.address}
+                  {formik.errors.qualification}
                 </span>
               )}
             </div>
@@ -228,21 +238,17 @@ const Add_Faculty = () => {
 
             <div>
               <label className="block text-gray-700 font-medium pb-3">
-                Class
+                Address
               </label>
-              <select
-                name="class"
-                {...formik.getFieldProps("class")}
+              <input
+                type="text"
+                name="address"
+                {...formik.getFieldProps("address")}
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
-              >
-                <option value="">Choose...</option>
-                <option value="Class1">Class 1</option>
-                <option value="Class2">Class 2</option>
-                <option value="Class3">Class 3</option>
-              </select>
-              {formik.touched.class && formik.errors.class && (
+              />
+              {formik.touched.address && formik.errors.address && (
                 <span className="text-red-500 text-sm">
-                  {formik.errors.class}
+                  {formik.errors.address}
                 </span>
               )}
             </div>
