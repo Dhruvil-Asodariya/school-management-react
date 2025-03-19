@@ -103,6 +103,7 @@ const Class = () => {
           title: "Error!",
           text: "Failed to update class",
           icon: "error",
+          timer: 1000,
           showConfirmButton: true,
         });
       }
@@ -124,13 +125,25 @@ const Class = () => {
     if (result.isConfirmed) {
       try {
         await axios.delete(`http://localhost:8081/class/${classId}`);
-        Swal.fire("Deleted!", "The class has been deleted.", "success");
+        Swal.fire({
+          title: "Deleted!",
+          text: "The class has been deleted.",
+          icon: "success",
+          timer: 1000, // 1-second timer
+          showConfirmButton: false
+        });
         fetchData(); // Refresh data after deletion
       } catch (error) {
         console.error("Error deleting subject:", error);
-        Swal.fire("Error!", "Failed to delete the class.", "error");
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to delete the class.",
+          icon: "error",
+          timer: 1000, // 1-second timer
+          showConfirmButton: false
+        });
       }
-    }
+    }    
   };
 
   return (

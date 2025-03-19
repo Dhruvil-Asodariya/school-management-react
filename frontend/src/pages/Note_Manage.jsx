@@ -48,6 +48,7 @@ const ManageNote = () => {
           title: "Error!",
           text: "Failed to add note",
           icon: "error",
+          timer: 1000,
           showConfirmButton: true,
         });
       }

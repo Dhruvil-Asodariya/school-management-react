@@ -104,6 +104,7 @@ const Subject_Manage = () => {
           title: "Error!",
           text: "Failed to update subject",
           icon: "error",
+          timer: 1000,
           showConfirmButton: true,
         });
       }

@@ -118,7 +118,12 @@ app.post("/login", (req, res) => {
     });
 });
 
-
+app.post("/logout", (req, res) => {
+    res.clearCookie("connect.sid"); // Adjust cookie name if needed
+    req.session.destroy(() => {
+        res.status(200).json({ message: "Logged out successfully" });
+    });
+});
 
 
 // ✅ Session Route (Get Session Data)
@@ -651,16 +656,23 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
     }
 });
 
-// Update Faculty
+// Update Faculty Details
 app.put("/faculty/:id", (req, res) => {
     const { id } = req.params;
-    const { first_name, last_name, phone_no, gender, qualification, subject } = req.body;
-    const sql = `UPDATE faculty SET first_name=?, last_name=?, phone_no=?, gender=?, qualification=?, subject=?, WHERE faculty_id=?`;
-    db.query(sql, [first_name, last_name, phone_no, gender, qualification, subject, id], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ message: "Faculty Updated Successfully" });
+    const { name, mobile, gender, education, subject } = req.body;
+    const [firstName, lastName] = name.split(" "); // Splitting full name into first & last
+
+    const updateQuery = `
+      UPDATE faculty_detail
+      SET first_name = ?, last_name = ?, phone_no = ?, gender = ?, qualification = ?, subject = ? 
+      WHERE faculty_id = ?
+    `;
+
+    db.query(updateQuery, [firstName, lastName, mobile, gender, education, subject, id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Faculty updated successfully" });
     });
-  });
+});
 
 // Add New Holiday
 app.post("/holiday", (req, res) => {

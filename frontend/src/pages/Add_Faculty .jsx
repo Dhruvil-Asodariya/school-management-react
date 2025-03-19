@@ -72,6 +72,8 @@ const Add_Faculty = () => {
           title: "Error!",
           text: "Failed to add faculty. Please try again.",
           icon: "error",
+          timer: 1000,
+          showConfirmButton: true,
         });
       }
     },

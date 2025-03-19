@@ -55,6 +55,7 @@ const Leave_Manage = () => {
         title: "Success!",
         text: `Leave status updated to ${newStatus ? "Active" : "Inactive"}.`,
         icon: "success",
+        timer: 1000,
         confirmButtonColor: "#3085d6",
         confirmButtonText: "OK",
       });
@@ -66,6 +67,7 @@ const Leave_Manage = () => {
         title: "Error!",
         text: "Failed to update leave status.",
         icon: "error",
+        timer: 1000,
         confirmButtonColor: "#d33",
         confirmButtonText: "Try Again",
       });

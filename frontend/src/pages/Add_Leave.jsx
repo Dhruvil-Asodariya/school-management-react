@@ -48,6 +48,7 @@ const Add_Leave = () => {
           title: "Error!",
           text: "Failed to add leave",
           icon: "error",
+          timer: 1000,
           showConfirmButton: true,
         });
       }

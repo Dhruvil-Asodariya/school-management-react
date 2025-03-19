@@ -1,13 +1,14 @@
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Swal from "sweetalert2";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios";
 import { useEffect, useState } from "react";
 
 const Login = () => {
-  const [error, setError] = useState(""); // To store error messages
+  const [error, setError] = useState("");
   const [userSession, setUserSession] = useState(null);
+  const navigate = useNavigate(); // ✅ Use navigate for redirection
 
   const validationSchema = Yup.object({
     userName: Yup.string().required("Please enter user name"),
@@ -39,12 +40,12 @@ const Login = () => {
           timerProgressBar: true,
         }).then(() => {
           formik.resetForm();
-          checkSession();
+          checkSession(); // ✅ Fetch session data after login
         });
 
       } catch (error) {
         if (error.response && error.response.data) {
-          setError(error.response.data.error); // Set specific error message
+          setError(error.response.data.error);
         } else {
           setError("An unknown error occurred.");
         }
@@ -57,6 +58,11 @@ const Login = () => {
     try {
       const response = await axios.get("http://localhost:8081/session", { withCredentials: true });
       setUserSession(response.data);
+
+      // ✅ Redirect if user role is 1 (Admin)
+      if (response.data?.user?.role === 1) {
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error("No Active Session:", error.response?.data || error);
     }
@@ -103,7 +109,6 @@ const Login = () => {
             )}
           </div>
 
-          {/* ✅ Show error message if exists */}
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
           <button

@@ -66,6 +66,7 @@ const Holiday = () => {
           title: "Success!",
           text: "Holiday updated successfully.",
           icon: "success",
+          timer: 1000,
           confirmButtonText: "OK"
         });
       })
@@ -74,6 +75,7 @@ const Holiday = () => {
           title: "Error!",
           text: "Failed to update holiday.",
           icon: "error",
+          timer: 1000,
           confirmButtonText: "OK"
         });
       });
@@ -93,10 +95,22 @@ const Holiday = () => {
         axios.delete(`http://localhost:8081/holiday/${holidayId}`)
           .then(() => {
             setHolidays(holidays.filter(holiday => holiday.holiday_id !== holidayId));
-            Swal.fire("Deleted!", "Holiday has been deleted.", "success");
+            Swal.fire({
+              title: "Deleted!",
+              text: "Holiday has been deleted.",
+              icon: "success",
+              timer: 1000, // 1-second timer
+              showConfirmButton: false
+            });
           })
           .catch(() => {
-            Swal.fire("Error!", "Failed to delete holiday.", "error");
+            Swal.fire({
+              title: "Error!",
+              text: "Failed to delete holiday.",
+              icon: "error",
+              timer: 1000, // 1-second timer
+              showConfirmButton: false
+            });
           });
       }
     });
@@ -117,9 +131,8 @@ const Holiday = () => {
               <button
                 key={index}
                 onClick={() => setSelectedMonth(index + 1)}
-                className={`block w-full text-left px-4 py-2 rounded-md transition ${
-                  selectedMonth === index + 1 ? "bg-blue-600 text-white hover:scale-102" : "bg-gray-100 hover:bg-gray-200 hover:scale-102"
-                }`}
+                className={`block w-full text-left px-4 py-2 rounded-md transition ${selectedMonth === index + 1 ? "bg-blue-600 text-white hover:scale-102" : "bg-gray-100 hover:bg-gray-200 hover:scale-102"
+                  }`}
               >
                 {month}
               </button>
@@ -130,7 +143,7 @@ const Holiday = () => {
         {/* ✅ Holiday Table */}
         <div className="md:col-span-2 bg-white p-4 rounded-lg shadow-lg overflow-auto">
           <div className="text-lg font-semibold border-b pb-2 flex items-center space-x-4">
-            <FaCalendarDays className="w-5 h-5"/>
+            <FaCalendarDays className="w-5 h-5" />
             <span>{months[selectedMonth - 1]}</span>
           </div>
 

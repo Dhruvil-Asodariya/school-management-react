@@ -71,6 +71,7 @@ const Add_Student = () => {
           title: "Error!",
           text: "Failed to add material",
           icon: "error",
+          timer: 1000,
           showConfirmButton: true,
         });
       }

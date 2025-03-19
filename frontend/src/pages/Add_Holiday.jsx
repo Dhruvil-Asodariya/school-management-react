@@ -47,6 +47,7 @@ const Add_Holiday = () => {
           title: "Error!",
           text: "Failed to add holiday",
           icon: "error",
+          timer: 1000,
           showConfirmButton: true,
         });
       }

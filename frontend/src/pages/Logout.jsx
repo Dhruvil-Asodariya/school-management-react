@@ -1,29 +1,42 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 const Logout = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Clear user session (Token or Auth Data)
-    localStorage.removeItem("userToken");
-    sessionStorage.removeItem("userSession");
+    const logoutUser = async () => {
+      try {
+        // Call backend logout API (Adjust URL as per your backend)
+        await axios.post("http://localhost:8081/logout", {}, { withCredentials: true });
 
-    // Show success toast message
-    toast.success("Logged out successfully!", {
-      position: "top-right",
-      autoClose: 2000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: false,
-      draggable: true,
-    });
+        // Clear user session (Token or Auth Data)
+        localStorage.removeItem("userToken");
+        sessionStorage.removeItem("userSession");
 
-    // Redirect to login page after 2 seconds
-    setTimeout(() => {
-      navigate("/");
-    }, 2000);
+        // Show success toast message
+        toast.success("Logged out successfully!", {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: false,
+          draggable: true,
+        });
+
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      } catch (error) {
+        console.error("Logout failed:", error);
+        toast.error("Logout failed. Please try again.");
+      }
+    };
+
+    logoutUser();
   }, [navigate]);
 
   return (

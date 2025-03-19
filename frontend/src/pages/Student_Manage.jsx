@@ -36,12 +36,24 @@ const StudentManage = () => {
     e.preventDefault();
     try {
       await axios.put(`http://localhost:8081/student/${editStudent.id}`, editStudent);
-      Swal.fire("Updated!", "Student details have been updated.", "success");
+      Swal.fire({
+        title: "Updated!",
+        text: "Student details have been updated.",
+        icon: "success",
+        timer: 1000, // 1-second timer
+        showConfirmButton: false,
+      });
       fetchData();
       setEditStudent(null);
     } catch (error) {
       console.error("Error updating student:", error);
-      Swal.fire("Error!", "Failed to update student details.", "error");
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update student details.",
+        icon: "error",
+        timer: 1000, // 1-second timer
+        showConfirmButton: false,
+      });
     }
   };
 
@@ -52,6 +64,7 @@ const StudentManage = () => {
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
+      timer: 1000,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, delete it!",
