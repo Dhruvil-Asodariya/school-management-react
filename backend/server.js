@@ -335,7 +335,7 @@ app.post("/student", upload.single("image"), async (req, res) => {
         const fullName = firstName + " " + lastName;
 
         const sql = `INSERT INTO student_detail 
-                     (first_name, last_name, email, phone_number, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
+                     (first_name, last_name, email, phone_no, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
         const values = [firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image];
 
@@ -384,7 +384,7 @@ app.put("/student/:id", (req, res) => {
 
     const query = `
       UPDATE student_detail 
-      SET first_name = ?, last_name = ?, phone_number = ?, emrNumber = ?, date_of_birth = ?, address = ?, gender = ?, class_id = ?
+      SET first_name = ?, last_name = ?, phone_no = ?, emrNumber = ?, date_of_birth = ?, address = ?, gender = ?, class_id = ?
       WHERE student_id = ?
     `;
 

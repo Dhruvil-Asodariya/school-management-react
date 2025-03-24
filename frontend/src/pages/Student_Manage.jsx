@@ -90,7 +90,7 @@ const StudentManage = () => {
     email: student.email,
     gender: student.gender,
     dob: student.date_of_birth,
-    phone_number: student.phone_number,
+    phone_number: student.phone_no,
     emr_phone_number: student.emrNumber,
     address: student.address,
     class: student.class_id,

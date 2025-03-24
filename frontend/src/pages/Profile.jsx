@@ -32,11 +32,6 @@ const Profile = () => {
       .test("fileSize", "File too large, max 5MB", (value) =>
         value ? value.size <= 5 * 1024 * 1024 : true
       )
-      .test("fileType", "Only JPG, JPEG, and PNG allowed", (value) =>
-        value
-          ? ["image/jpg", "image/jpeg", "image/png"].includes(value.type)
-          : true
-      ),
   });
   // Formik for Main Profile (Excluding Profile Picture)
   const formik = useFormik({
@@ -84,7 +79,6 @@ const Profile = () => {
                 <h2 className="text-lg font-semibold mt-4">
                   {formik.values.firstName} {formik.values.lastName}
                 </h2>
-                <p className="text-gray-500">Project Manager</p>
                 <div className="mt-4">
                   <button
                     className="bg-blue-500 text-white py-2 px-4 rounded-lg inline-flex items-center mr-2"
@@ -94,13 +88,6 @@ const Profile = () => {
                   </button>
                   <button
                     className="bg-red-500 text-white py-2 px-4 rounded-lg inline-flex items-center"
-                    onClick={() =>
-                      Swal.fire(
-                        "Deleted!",
-                        "Your profile has been deleted.",
-                        "success"
-                      )
-                    }
                   >
                     <MdOutlineDelete className="mr-2" /> Delete Profile
                   </button>
