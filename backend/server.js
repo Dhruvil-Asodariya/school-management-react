@@ -7,6 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
+const { userInfo } = require('os');
 
 const app = express()
 // Middleware
@@ -68,14 +69,13 @@ const material_storage = multer.diskStorage({
 });
 
 // Set up session
-app.use(
-    session({
-        secret: "mySecretKey", // Change this to a strong secret key
-        resave: false,
-        saveUninitialized: true,
-        cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 }, // 1 hour
-    })
-);
+app.use(session({
+    secret: "your_secret_key",
+    resave: false,
+    saveUninitialized: false, // 🔹 Only store sessions after login
+    cookie: { secure: false, httpOnly: true, maxAge: 60 * 60 * 1000 }
+}));
+
 
 //Login
 
@@ -94,10 +94,9 @@ app.post("/login", (req, res) => {
             return res.status(401).json({ error: "Username not registered" });
         }
 
-        const user = result[0]; // Get user data from the query result
-        const hashedPassword = user.password; // Get stored hashed password
+        const user = result[0];
+        const hashedPassword = user.password;
 
-        // Compare password
         const isMatch = await bcrypt.compare(password, hashedPassword);
         if (!isMatch) {
             return res.status(401).json({ error: "Incorrect password" });
@@ -107,9 +106,11 @@ app.post("/login", (req, res) => {
         req.session.user = {
             userName: user.user_name,
             email: user.user_name,
-            role: user.role
+            role: user.role,
+            password: user.password
         };
-        req.session.message = "Welcome, " + userName;
+
+        console.log("Session After Login:", req.session); // ✅ Check session
 
         return res.json({
             message: "Login successful",
@@ -132,6 +133,56 @@ app.get("/session", (req, res) => {
         return res.status(401).json({ message: "No active session" });
     }
     res.json({ user: req.session.user });
+});
+
+app.post("/change_password", async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Unauthorized access" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    const userEmail = req.session.user.email;
+
+    try {
+        // Fetch user from DB
+        const sql = "SELECT password FROM user_detail WHERE user_name = ?";
+        db.query(sql, [userEmail], async (err, result) => {
+            if (err) {
+                console.error("Database Error:", err);
+                return res.status(500).json({ error: "Server error" });
+            }
+
+            if (result.length === 0) {
+                return res.status(404).json({ error: "User not found" });
+            }
+
+            const hashedPassword = result[0].password;
+
+            // Compare passwords
+            const isMatch = await bcrypt.compare(currentPassword, hashedPassword);
+            if (!isMatch) {
+                return res.status(401).json({ error: "Current password is incorrect" });
+            }
+
+            // Hash new password
+            const saltRounds = 10;
+            const newHashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+            // Update password in DB
+            const updateSql = "UPDATE user_detail SET password = ? WHERE user_name = ?";
+            db.query(updateSql, [newHashedPassword, userEmail], (updateErr) => {
+                if (updateErr) {
+                    console.error("Update Error:", updateErr);
+                    return res.status(500).json({ error: "Could not update password" });
+                }
+
+                res.json({ message: "Password changed successfully" });
+            });
+        });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
 });
 
 // Get All Subject 
@@ -764,6 +815,7 @@ app.delete("/holiday/:id", (req, res) => {
     });
 });
 
+//Get Dashboard Count
 app.get("/dashboard_totals", (req, res) => {
     const queries = {
         students: "SELECT COUNT(*) AS total FROM student_detail",
@@ -794,6 +846,41 @@ app.get("/dashboard_totals", (req, res) => {
         });
     }
 });
+
+// Get Profile
+app.get('/profile', (req, res) => {
+    console.log("🔍 Session Debug:", req.session); // ✅ Log session
+
+    if (!req.session.user) {
+        return res.status(401).json({
+            message: "Unauthorized access",
+            session: req.session  // ✅ Return session object for debugging
+        });
+    }
+
+    const email = req.session.user.email;
+    console.log("✅ User email from session:", email);
+
+    const sql = `
+        SELECT image, first_name, last_name FROM student_detail WHERE email LIKE ?
+        UNION ALL
+        SELECT image, first_name, last_name FROM faculty_detail WHERE email LIKE ?
+        UNION ALL
+        SELECT image, first_name, last_name FROM parent_detail WHERE email LIKE ?
+    `;
+
+    const emailSearch = `%${email}%`;
+
+    db.query(sql, [emailSearch, emailSearch, emailSearch], (err, result) => {
+        if (err) {
+            console.error("❌ Database Error:", err);
+            return res.status(500).json({ message: "Error inside server", error: err.message });
+        }
+        console.log("✅ Query Result:", result);
+        return res.json(result);
+    });
+});
+
 
 
 

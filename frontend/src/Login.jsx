@@ -1,13 +1,12 @@
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import Swal from "sweetalert2";
 import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
 import axios from "axios";
 import { useEffect, useState } from "react";
 
 const Login = () => {
   const [error, setError] = useState("");
-  const [userSession, setUserSession] = useState(null);
+  const [, setUserSession] = useState(null);
   const navigate = useNavigate(); // ✅ Use navigate for redirection
 
   const validationSchema = Yup.object({
@@ -26,23 +25,10 @@ const Login = () => {
     onSubmit: async (values) => {
       setError(""); // Reset error before submitting
       try {
-        const res = await axios.post("http://localhost:8081/login", {
+        await axios.post("http://localhost:8081/login", {
           userName: values.userName,
           password: values.password,
         }, { withCredentials: true });
-
-        Swal.fire({
-          title: "Success!",
-          text: res.data.message,
-          icon: "success",
-          timer: 1000,
-          showConfirmButton: true,
-          timerProgressBar: true,
-        }).then(() => {
-          formik.resetForm();
-          checkSession(); // ✅ Fetch session data after login
-        });
-
       } catch (error) {
         if (error.response && error.response.data) {
           setError(error.response.data.error);
@@ -60,9 +46,7 @@ const Login = () => {
       setUserSession(response.data);
 
       // ✅ Redirect if user role is 1 (Admin)
-      if (response.data?.user?.role === 1) {
-        navigate("/dashboard");
-      }
+      navigate("/dashboard");
     } catch (error) {
       console.error("No Active Session:", error.response?.data || error);
     }
@@ -70,7 +54,7 @@ const Login = () => {
 
   useEffect(() => {
     checkSession();
-  }, []);
+  },);
 
   return (
     <div className="flex h-screen">
@@ -125,16 +109,6 @@ const Login = () => {
             Forgot Password?
           </Link>
         </p>
-
-        {/* ✅ Show Session Data */}
-        {userSession && (
-          <div className="mt-4 p-4 bg-green-100 rounded-lg">
-            <h3 className="text-lg font-semibold">Active Session:</h3>
-            <p><b>User:</b> {userSession.user.userName}</p>
-            <p><b>Role:</b> {userSession.user.role}</p>
-            <p><b>Message:</b> {userSession.message}</p>
-          </div>
-        )}
       </div>
 
       <div className="md:w-3/4 relative">
