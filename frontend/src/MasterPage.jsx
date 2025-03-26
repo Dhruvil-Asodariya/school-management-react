@@ -67,7 +67,7 @@ const MasterPage = ({ children }) => {
   // Fetch Students
   const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:8081/profile", {
+      const res = await axios.get("http://localhost:8081/master", {
         withCredentials: true, // Ensures session cookies are sent
       });
 

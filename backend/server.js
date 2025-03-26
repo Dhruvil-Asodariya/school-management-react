@@ -61,19 +61,29 @@ const faculty_storage = multer.diskStorage({
 });
 
 const material_storage = multer.diskStorage({
-    destination: path.join(__dirname, "../frontend/public/material"),
+    destination: path.join(__dirname, "../frontend/public"),
     filename: (req, file, cb) => {
         const material_name = req.body.materialTitle + " " + req.body.chapter; // Fix: Use `chapter`, not `selectedChapters`
         cb(null, material_name + path.extname(file.originalname));
     },
 });
 
+const profile_picture_storage = multer.diskStorage({
+    destination: path.join(__dirname, "../frontend/public"), // Change this line
+    filename: (req, file, cb) => {
+        const facultyName = req.body.firstName + "_" + req.body.lastName;
+        const uniqueSuffix = Date.now();
+        cb(null, facultyName + "_" + uniqueSuffix + path.extname(file.originalname));
+    },
+});
+
+
 // Set up session
 app.use(session({
     secret: "your_secret_key",
     resave: false,
     saveUninitialized: false, // 🔹 Only store sessions after login
-    cookie: { secure: false, httpOnly: true, maxAge: 60 * 60 * 1000 }
+    cookie: { secure: false, httpOnly: true, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
 
@@ -848,7 +858,7 @@ app.get("/dashboard_totals", (req, res) => {
 });
 
 // Get Profile
-app.get('/profile', (req, res) => {
+app.get('/master', (req, res) => {
     console.log("🔍 Session Debug:", req.session); // ✅ Log session
 
     if (!req.session.user) {
@@ -881,7 +891,211 @@ app.get('/profile', (req, res) => {
     });
 });
 
+app.get('/profile', (req, res) => {
+    console.log("🔍 Session Debug:", req.session); // ✅ Log session
 
+    if (!req.session.user) {
+        return res.status(401).json({
+            message: "Unauthorized access",
+            session: req.session  // ✅ Return session object for debugging
+        });
+    }
+
+    const email = req.session.user.email;
+    console.log("✅ User email from session:", email);
+
+    const sql = `
+        SELECT email FROM student_detail WHERE email LIKE ?
+        UNION ALL
+        SELECT email FROM faculty_detail WHERE email LIKE ?
+        UNION ALL
+        SELECT email FROM parent_detail WHERE email LIKE ?
+    `;
+
+    const emailSearch = `%${email}%`;
+
+    db.query(sql, [emailSearch, emailSearch, emailSearch], (err, result) => {
+        if (err) {
+            console.error("❌ Database Error:", err);
+            return res.status(500).json({ message: "Error inside server", error: err.message });
+        }
+        const matchEmail = result[0].email;
+        console.log("✅ Query Result:", result);
+        // return res.json(matchEmail);
+
+        const profileQuery = `
+        SELECT first_name, last_name, email, phone_no, date_of_birth, address, gender, image FROM student_detail WHERE email LIKE ?
+        UNION ALL
+        SELECT first_name, last_name, email, phone_no, date_of_birth, address, gender, image FROM faculty_detail WHERE email LIKE ?
+        UNION ALL
+        SELECT first_name, last_name, email, phone_no, date_of_birth, address, gender, image FROM parent_detail WHERE email LIKE ?
+    `;
+
+        db.query(profileQuery, [matchEmail, matchEmail, matchEmail], (err, profileResult) => {
+            if (err) {
+                console.error("❌ Database Error:", err);
+                return res.status(500).json({ message: "Error retrieving profile", error: err.message });
+            }
+
+            console.log("✅ Full Profile Data:", profileResult);
+            return res.json({ message: "Profile retrieved successfully", profile: profileResult[0] });
+        });
+
+    });
+
+});
+
+// Update Profile 
+app.put("/profile_update", (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Unauthorized access" });
+    }
+
+    const { role } = req.session.user;
+    let table_name;
+    switch (role) {
+        case 1: table_name = "admin_detail"; break;
+        case 2: table_name = "principal_detail"; break;
+        case 3: table_name = "faculty_detail"; break;
+        case 4: table_name = "student_detail"; break;
+        default: table_name = "parent_detail";
+    }
+
+    const { firstName, lastName, phoneNo, dob, address, gender, email } = req.body;
+    console.log("Updating profile for:", { firstName, lastName, phoneNo, dob, address, gender, email });
+
+    if (!firstName || !lastName || !phoneNo || !dob || !address || !gender || !email) {
+        return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Ensure user exists before updating
+    const checkQuery = `SELECT * FROM ${table_name} WHERE email = ?`;
+    db.query(checkQuery, [email], (err, result) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database error" });
+        }
+        if (result.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // Update profile if user exists
+        const updateQuery = `
+            UPDATE ${table_name} 
+            SET first_name = ?, last_name = ?, phone_no = ?, date_of_birth = ?, address = ?, gender = ?
+            WHERE email = ?
+        `;
+
+        db.query(updateQuery, [firstName, lastName, phoneNo, dob, address, gender, email], (err, result) => {
+            if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({ error: "Database error" });
+            }
+            res.json({ message: "Profile updated successfully!" });
+        });
+    });
+});
+
+const profile_picture_upload = multer({ storage: profile_picture_storage });
+
+//Change Profile Picture
+app.put("/update_profile_picture", profile_picture_upload.single("profilePicture"), async (req, res) => {
+    const { email } = req.body;
+    const { role } = req.session.user;
+
+    if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    let table_name;
+    switch (role) {
+        case 1: table_name = "admin_detail"; break;
+        case 2: table_name = "principal_detail"; break;
+        case 3: table_name = "faculty_detail"; break;
+        case 4: table_name = "student_detail"; break;
+        default: table_name = "parent_detail";
+    }
+
+    const fetchImageQuery = `SELECT image FROM ${table_name} WHERE email = ?`;
+
+    db.query(fetchImageQuery, [email], (err, imageResult) => {
+        if (err) {
+            console.error("❌ Database Error:", err);
+            return res.status(500).json({ message: "Error retrieving profile picture", error: err.message });
+        }
+
+        // Check if there is an existing image
+        if (imageResult.length > 0 && imageResult[0].image) {
+            const oldImagePath = path.join(__dirname, "../frontend/public", imageResult[0].image);
+
+            // Delete the old image if it exists
+            fs.unlink(oldImagePath, (unlinkErr) => {
+                if (unlinkErr && unlinkErr.code !== "ENOENT") {
+                    console.error("⚠️ Error deleting old image:", unlinkErr);
+                }
+            });
+        }
+
+        // Save new image filename
+        const imagePath = req.file.filename;
+
+        const updateQuery = `UPDATE ${table_name} SET image = ? WHERE email = ?`;
+
+        db.query(updateQuery, [imagePath, email], (updateErr, result) => {
+            if (updateErr) {
+                console.error("❌ Database error:", updateErr);
+                return res.status(500).json({ error: "Database error" });
+            }
+            res.json({ message: "Profile Picture updated successfully!", imageUrl: `/uploads/${imagePath}` });
+        });
+    });
+});
+
+//Dlete Profile Picture
+app.delete("/delete_profile_picture", async (req, res) => {
+    const { email } = req.body;
+    const { role } = req.session.user;
+
+    let table_name;
+    switch (role) {
+        case 1: table_name = "admin_detail"; break;
+        case 2: table_name = "principal_detail"; break;
+        case 3: table_name = "faculty_detail"; break;
+        case 4: table_name = "student_detail"; break;
+        default: table_name = "parent_detail";
+    }
+
+    const fetchImageQuery = `SELECT image FROM ${table_name} WHERE email = ?`;
+
+    db.query(fetchImageQuery, [email], (err, imageResult) => {
+        if (err) {
+            return res.status(500).json({ message: "Error retrieving profile picture", error: err.message });
+        }
+
+        if (imageResult.length > 0 && imageResult[0].image) {
+            const oldImagePath = path.join(__dirname, "../frontend/public", imageResult[0].image);
+
+            // Delete the old image
+            fs.unlink(oldImagePath, (unlinkErr) => {
+                if (unlinkErr && unlinkErr.code !== "ENOENT") {
+                    console.error("Error deleting image:", unlinkErr);
+                    return res.status(500).json({ message: "Failed to delete image" });
+                }
+
+                // Update database to remove image reference
+                const updateQuery = `UPDATE ${table_name} SET image = "default_profile.jpg" WHERE email = ?`;
+                db.query(updateQuery, [email], (updateErr) => {
+                    if (updateErr) {
+                        return res.status(500).json({ error: "Database error" });
+                    }
+                    res.json({ message: "Profile picture deleted successfully!" });
+                });
+            });
+        } else {
+            res.status(404).json({ message: "No profile picture found" });
+        }
+    });
+});
 
 
 
