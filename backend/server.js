@@ -1024,32 +1024,38 @@ app.put("/update_profile_picture", profile_picture_upload.single("profilePicture
             return res.status(500).json({ message: "Error retrieving profile picture", error: err.message });
         }
 
-        // Check if there is an existing image
-        if (imageResult.length > 0 && imageResult[0].image) {
-            const oldImagePath = path.join(__dirname, "../frontend/public", imageResult[0].image);
+        if (imageResult.length > 0) {
+            const oldImage = imageResult[0].image;
 
-            // Delete the old image if it exists
-            fs.unlink(oldImagePath, (unlinkErr) => {
-                if (unlinkErr && unlinkErr.code !== "ENOENT") {
-                    console.error("⚠️ Error deleting old image:", unlinkErr);
-                }
-            });
+            // 🚨 Ensure the old image is not "default_profile.jpg" before deleting
+            if (oldImage && oldImage !== "default_profile.jpg") {
+                const oldImagePath = path.join(__dirname, "../frontend/public", oldImage);
+
+                fs.unlink(oldImagePath, (unlinkErr) => {
+                    if (unlinkErr && unlinkErr.code !== "ENOENT") {
+                        console.error("⚠️ Error deleting old image:", unlinkErr);
+                    } else {
+                        console.log("✅ Old profile picture deleted successfully.");
+                    }
+                });
+            }
         }
 
         // Save new image filename
-        const imagePath = req.file.filename;
+        const newImagePath = req.file.filename;
 
         const updateQuery = `UPDATE ${table_name} SET image = ? WHERE email = ?`;
 
-        db.query(updateQuery, [imagePath, email], (updateErr, result) => {
+        db.query(updateQuery, [newImagePath, email], (updateErr, result) => {
             if (updateErr) {
                 console.error("❌ Database error:", updateErr);
                 return res.status(500).json({ error: "Database error" });
             }
-            res.json({ message: "Profile Picture updated successfully!", imageUrl: `/uploads/${imagePath}` });
+            res.json({ message: "Profile Picture updated successfully!", imageUrl: `/uploads/${newImagePath}` });
         });
     });
 });
+
 
 //Dlete Profile Picture
 app.delete("/delete_profile_picture", async (req, res) => {

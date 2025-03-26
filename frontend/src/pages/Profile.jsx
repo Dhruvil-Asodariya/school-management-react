@@ -124,37 +124,37 @@ const Profile = () => {
 
   const handleDeleteProfilePicture = async () => {
     Swal.fire({
-        title: "Are you sure?",
-        text: "You want to delete your profile picture?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Yes, delete it!",
-        cancelButtonText: "Cancel",
+      title: "Are you sure?",
+      text: "You want to delete your profile picture?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
     }).then(async (result) => {
-        if (result.isConfirmed) {
-            try {
-                await axios.delete("http://localhost:8081/delete_profile_picture", {
-                    data: { email: formik.values.email },
-                    withCredentials: true,
-                });
+      if (result.isConfirmed) {
+        try {
+          await axios.delete("http://localhost:8081/delete_profile_picture", {
+            data: { email: formik.values.email },
+            withCredentials: true,
+          });
 
-                Swal.fire({
-                    title: "Deleted!",
-                    text: "Your profile picture has been deleted.",
-                    icon: "success",
-                    timer: 1000, // Auto-close after 1 second
-                    showConfirmButton: false,
-                }).then(() => {
-                    window.location.reload(); // Reload the page after Swal closes
-                });
+          Swal.fire({
+            title: "Deleted!",
+            text: "Your profile picture has been deleted.",
+            icon: "success",
+            timer: 1000, // Auto-close after 1 second
+            showConfirmButton: false,
+          }).then(() => {
+            window.location.reload(); // Reload the page after Swal closes
+          });
 
-            } catch (error) {
-                console.error("Error deleting profile picture:", error);
-                Swal.fire("Error", "Failed to delete profile picture", "error");
-            }
+        } catch (error) {
+          console.error("Error deleting profile picture:", error);
+          Swal.fire("Error", "Failed to delete profile picture", "error");
         }
+      }
     });
-};
+  };
 
 
   if (loading) return <p className="text-center text-lg">Loading profile...</p>;
@@ -180,10 +180,15 @@ const Profile = () => {
                   <button className="bg-blue-500 text-white py-2 px-4 rounded-lg inline-flex items-center mr-2" onClick={() => setIsEditModalOpen(true)}>
                     <FaRegEdit className="mr-2" /> Edit Profile
                   </button>
-                  <button
-                    className="bg-red-500 text-white py-2 px-4 rounded-lg inline-flex items-center" onClick={handleDeleteProfilePicture}>
-                    <MdOutlineDelete className="mr-2" /> Delete Profile
-                  </button>
+                  {profilePic !== "default_profile.jpg" && (
+                    <button
+                      className="bg-red-500 text-white py-2 px-4 rounded-lg inline-flex items-center"
+                      onClick={handleDeleteProfilePicture}
+                    >
+                      <MdOutlineDelete className="mr-2" /> Delete Profile
+                    </button>
+                  )}
+
                 </div>
               </div>
             </div>
