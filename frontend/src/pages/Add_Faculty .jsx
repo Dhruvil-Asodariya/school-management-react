@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Swal from "sweetalert2";
@@ -8,6 +9,7 @@ import axios from "axios";
 
 const Add_Faculty = () => {
   const navigate = useNavigate();
+  const [subjects, setSubjects] = useState([]);
 
   const validationSchema = Yup.object({
     firstName: Yup.string()
@@ -79,6 +81,18 @@ const Add_Faculty = () => {
     },
   });
 
+  // Fetch subjects from the database
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const response = await axios.get("http://localhost:8081/subject");
+        setSubjects(response.data); // Assuming response.data is an array of subjects
+      } catch (error) {
+        console.error("Error fetching subjects:", error);
+      }
+    };
+    fetchSubjects();
+  }, []);
 
   return (
     <div className="flex justify-center items-center">
@@ -156,19 +170,23 @@ const Add_Faculty = () => {
             <div>
               <label className="block text-gray-700 font-medium pb-3">Subjects</label>
               <div className="flex flex-wrap gap-3">
-                {["Math", "Science", "English", "History", "Geography"].map((subject) => (
-                  <label key={subject} className="flex items-center space-x-2">
+              {subjects.length > 0 ? (
+                subjects.map((subject) => (
+                  <label key={subject.subject_id} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       name="subjects"
-                      value={subject}
-                      checked={formik.values.subjects.includes(subject)}
+                      value={subject.subject_name}
+                      checked={formik.values.subjects.includes(subject.name)}
                       onChange={formik.handleChange}
                       className="w-4 h-4"
                     />
-                    <span>{subject}</span>
+                    <span>{subject.subject_name}</span>
                   </label>
-                ))}
+                ))
+              ) : (
+                <p className="text-gray-500">Loading subjects...</p>
+              )}
               </div>
               {formik.touched.subjects && formik.errors.subjects && (
                 <span className="text-red-500 text-sm">{formik.errors.subjects}</span>
@@ -229,7 +247,6 @@ const Add_Faculty = () => {
                 <option value="">Choose...</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
-                <option value="Other">Other</option>
               </select>
               {formik.touched.gender && formik.errors.gender && (
                 <span className="text-red-500 text-sm">

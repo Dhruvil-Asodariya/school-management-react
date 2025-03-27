@@ -37,8 +37,8 @@ db.connect((err) => {
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "Your email", // Replace with your email
-        pass: "Your pass-key", // Use App Password if 2FA is enabled
+        user: "Your-Email", // Replace with your email
+        pass: "Your Pass-Key", // Use App Password if 2FA is enabled
     },
 });
 
@@ -338,34 +338,42 @@ app.post("/student", upload.single("image"), async (req, res) => {
 
         const admission_date = new Date().toISOString().slice(0, 10);
         const userName = email.split("@")[0];
-        const password = Math.floor(100000 + Math.random() * 900000).toString();; // Password should be a string
-        const salt = await bcrypt.genSalt(10); // Await here
-        const hash_password = await bcrypt.hash(password, salt); // Await here
-        const role = "1";
-        const fullName = firstName + " " + lastName;
+        const password = Math.floor(100000 + Math.random() * 900000).toString();
+        const salt = await bcrypt.genSalt(10);
+        const hash_password = await bcrypt.hash(password, salt);
+        const role = "4";
+        const fullName = `${firstName} ${lastName}`;
 
-        const sql = `INSERT INTO student_detail 
-                     (first_name, last_name, email, phone_no, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-        const values = [firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image];
+        // Insert user into user_detail
+        const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
+        const user_values = [userName, hash_password, role];
 
-        db.query(sql, values, (err, result) => {
+        db.query(user_sql, user_values, (err, userResult) => {
             if (err) {
-                console.error("Error inserting student:", err);
-                return res.status(500).json({ message: "Database error" });
+                return res.status(500).json({ error: err.message });
             }
 
-            const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
-            const user_values = [userName, hash_password, role];
-            db.query(user_sql, user_values, (err, result) => {
+            const user_id = userResult.insertId; // ✅ Fetching user_id correctly
+            console.log("✅ New user ID:", user_id);
+
+            // Insert student into student_detail
+            const student_sql = `INSERT INTO student_detail 
+                (user_id, first_name, last_name, email, phone_no, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+            const student_values = [
+                user_id, firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image
+            ];
+
+            db.query(student_sql, student_values, (err, studentResult) => {
                 if (err) {
-                    return res.status(500).json({ error: err.message });
+                    console.error("❌ Error inserting student:", err);
+                    return res.status(500).json({ message: "Database error", error: err.message });
                 }
-                res.status(201).json({ message: "Student and user added successfully", id: result.insertId });
 
-
+                // ✅ Send email only after the student record is inserted
                 const mailOptions = {
-                    from: "Your Email",
+                    from: '"Easy Way School" <Your-Email@gmail.com>',
                     to: email,
                     subject: "Account Registered Successfully 🎉",
                     text: `Hello ${fullName},\n\nYour account has been successfully registered.\n\nHere are your login credentials:\nUsername: ${userName}\nPassword: ${password}\n\nPlease keep this information safe and do not share it with anyone.\n\nThank you!`,
@@ -373,19 +381,27 @@ app.post("/student", upload.single("image"), async (req, res) => {
 
                 transporter.sendMail(mailOptions, (error, info) => {
                     if (error) {
-                        console.error("Error sending email:", error);
+                        console.error("❌ Error sending email:", error);
                         return res.status(500).json({ error: "Email sending failed" });
                     }
-                    console.log("Email sent:", info.response);
+                    console.log("📧 Email sent:", info.response);
+
+                    // ✅ Finally, send success response after DB insertion & email
+                    res.status(201).json({ 
+                        message: "Student and user added successfully", 
+                        user_id: user_id,
+                        student_id: studentResult.insertId 
+                    });
                 });
             });
         });
 
     } catch (error) {
-        console.error("Server Error:", error);
+        console.error("❌ Server Error:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
+
 
 // Update Student 
 app.put("/student/:id", (req, res) => {
@@ -556,7 +572,7 @@ app.patch("/leave/:id", (req, res) => {
         // ✅ If status is Active (1), send an email
         if (status === 1) {
             const mailOptions = {
-                from: "Your-email",
+                from: '"Easy Way School" <Your-Email@gmail.com>',
                 to: email,
                 subject: "Leave Request Approved ✅",
                 text: `Hello ${fullName},\n\nYour leave request has been approved!\n\nThank you.`,
@@ -654,49 +670,49 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
         const image = req.file ? req.file.filename : null;
 
         const userName = email.split("@")[0];
-        const password = Math.floor(100000 + Math.random() * 900000).toString(); // Convert to string
-        const salt = await bcrypt.genSalt(10); // Await inside async function
-        const hash_password = await bcrypt.hash(password, salt); // Await inside async function
+        const password = Math.floor(100000 + Math.random() * 900000).toString();
+        const salt = await bcrypt.genSalt(10);
+        const hash_password = await bcrypt.hash(password, salt);
         const role = "3";
         const fullName = `${firstName} ${lastName}`;
         const join_date = new Date().toISOString().split("T")[0];
-        const today = new Date(); // Current date as Date object
-        const a_dob = new Date(dob); // Convert DOB string to Date object
 
+        const today = new Date();
+        const a_dob = new Date(dob);
         const age = today.getFullYear() - a_dob.getFullYear();
 
-        // Insert faculty details into the database
-        const sql = `
-            INSERT INTO faculty_detail (first_name, last_name, email, qualification, phone_no, age, date_of_birth, gender, address, subject, join_date, image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const values = [firstName, lastName, email, qualification, phoneNo, age, dob, gender, address, subjects, join_date, image];
+        // ✅ First, insert user details into user_detail table
+        const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
+        const user_values = [userName, hash_password, role];
 
-        db.query(sql, values, (err, result) => {
+        db.query(user_sql, user_values, (err, userResult) => {
             if (err) {
-                console.error("Error inserting faculty:", err);
-                return res.status(500).json({ message: "Database error" });
+                console.error("❌ Error inserting user:", err);
+                return res.status(500).json({ message: "Error adding user" });
             }
 
-            const facultyId = result.insertId;
-            console.log(`Faculty added with ID: ${facultyId}`);
+            const user_id = userResult.insertId; // ✅ Fetching newly created user ID
+            console.log(`✅ User added with ID: ${user_id}`);
 
-            // Insert user details into user_detail table
-            const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
-            const user_values = [userName, hash_password, role];
+            // ✅ Now, insert faculty details including the user_id
+            const faculty_sql = `
+                INSERT INTO faculty_detail (user_id, first_name, last_name, email, qualification, phone_no, age, date_of_birth, gender, address, subject, join_date, image)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            const faculty_values = [user_id, firstName, lastName, email, qualification, phoneNo, age, dob, gender, address, subjects, join_date, image];
 
-            db.query(user_sql, user_values, (err, result) => {
+            db.query(faculty_sql, faculty_values, (err, facultyResult) => {
                 if (err) {
-                    console.error("Error inserting user:", err);
-                    return res.status(500).json({ message: "Error adding user" });
+                    console.error("❌ Error inserting faculty:", err);
+                    return res.status(500).json({ message: "Database error" });
                 }
 
-                console.log(`User added with ID: ${result.insertId}`);
-                res.status(201).json({ message: "Faculty and user added successfully", facultyId });
+                const facultyId = facultyResult.insertId;
+                console.log(`✅ Faculty added with ID: ${facultyId}`);
 
-                // Send email after successful database entry
+                // ✅ Finally, send email after both insertions
                 const mailOptions = {
-                    from: "Your email",
+                    from: '"Easy Way School" <Your-Email@gmail.com>',
                     to: email,
                     subject: "Account Registered Successfully 🎉",
                     text: `Hello ${fullName},\n\nYour account has been successfully registered.\n\nHere are your login credentials:\nUsername: ${userName}\nPassword: ${password}\n\nPlease keep this information safe and do not share it with anyone.\n\nThank you!`,
@@ -704,18 +720,22 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
 
                 transporter.sendMail(mailOptions, (error, info) => {
                     if (error) {
-                        console.error("Error sending email:", error);
+                        console.error("❌ Error sending email:", error);
                     } else {
-                        console.log("Email sent:", info.response);
+                        console.log("📧 Email sent:", info.response);
                     }
                 });
+
+                res.status(201).json({ message: "Faculty added successfully", facultyId, userId: user_id });
             });
         });
+
     } catch (error) {
-        console.error("Server error:", error);
+        console.error("❌ Server error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
+
 
 // Update Faculty Details
 app.put("/faculty/:id", (req, res) => {
@@ -872,6 +892,8 @@ app.get('/master', (req, res) => {
     console.log("✅ User email from session:", email);
 
     const sql = `
+        SELECT image, first_name, last_name FROM admin_detail WHERE email LIKE ?
+        UNION ALL
         SELECT image, first_name, last_name FROM student_detail WHERE email LIKE ?
         UNION ALL
         SELECT image, first_name, last_name FROM faculty_detail WHERE email LIKE ?
@@ -881,7 +903,7 @@ app.get('/master', (req, res) => {
 
     const emailSearch = `%${email}%`;
 
-    db.query(sql, [emailSearch, emailSearch, emailSearch], (err, result) => {
+    db.query(sql, [emailSearch, emailSearch, emailSearch, emailSearch], (err, result) => {
         if (err) {
             console.error("❌ Database Error:", err);
             return res.status(500).json({ message: "Error inside server", error: err.message });
@@ -905,6 +927,8 @@ app.get('/profile', (req, res) => {
     console.log("✅ User email from session:", email);
 
     const sql = `
+        SELECT email FROM admin_detail WHERE email LIKE ?
+        UNION ALL
         SELECT email FROM student_detail WHERE email LIKE ?
         UNION ALL
         SELECT email FROM faculty_detail WHERE email LIKE ?
@@ -914,7 +938,7 @@ app.get('/profile', (req, res) => {
 
     const emailSearch = `%${email}%`;
 
-    db.query(sql, [emailSearch, emailSearch, emailSearch], (err, result) => {
+    db.query(sql, [emailSearch, emailSearch, emailSearch, emailSearch], (err, result) => {
         if (err) {
             console.error("❌ Database Error:", err);
             return res.status(500).json({ message: "Error inside server", error: err.message });
@@ -924,6 +948,8 @@ app.get('/profile', (req, res) => {
         // return res.json(matchEmail);
 
         const profileQuery = `
+        SELECT first_name, last_name, email, phone_no, date_of_birth, address, gender, image FROM admin_detail WHERE email LIKE ?
+        UNION ALL
         SELECT first_name, last_name, email, phone_no, date_of_birth, address, gender, image FROM student_detail WHERE email LIKE ?
         UNION ALL
         SELECT first_name, last_name, email, phone_no, date_of_birth, address, gender, image FROM faculty_detail WHERE email LIKE ?
@@ -931,7 +957,7 @@ app.get('/profile', (req, res) => {
         SELECT first_name, last_name, email, phone_no, date_of_birth, address, gender, image FROM parent_detail WHERE email LIKE ?
     `;
 
-        db.query(profileQuery, [matchEmail, matchEmail, matchEmail], (err, profileResult) => {
+        db.query(profileQuery, [matchEmail, matchEmail, matchEmail, matchEmail], (err, profileResult) => {
             if (err) {
                 console.error("❌ Database Error:", err);
                 return res.status(500).json({ message: "Error retrieving profile", error: err.message });

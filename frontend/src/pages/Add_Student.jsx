@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import Swal from "sweetalert2";
@@ -9,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 const Add_Student = () => {
 
   const navigate = useNavigate();
+  const [classes, setClasses] = useState([]); // ✅ State for class options
 
   const validationSchema = Yup.object({
     firstName: Yup.string()
@@ -93,6 +95,18 @@ const Add_Student = () => {
       }
     }
   });
+
+  // 🔹 Fetch class options from the database
+  useEffect(() => {
+    axios
+      .get("http://localhost:8081/class") // ✅ Adjust this to your actual API endpoint
+      .then((response) => {
+        setClasses(response.data); // ✅ Save fetched classes in state
+      })
+      .catch((error) => {
+        console.error("Error fetching classes:", error);
+      });
+  }, []);
 
   return (
     <div className="flex justify-center items-center ">
@@ -250,16 +264,11 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               >
                 <option value="">Choose...</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
+                {classes.map((cls) => (
+                  <option key={cls.class_id} value={cls.class_id}>
+                    {cls.class_name}
+                  </option>
+                ))}
               </select>
               {formik.touched.class && formik.errors.class && (
                 <span className="text-red-500 text-sm">

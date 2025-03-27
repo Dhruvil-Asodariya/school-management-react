@@ -397,6 +397,16 @@ const MasterPage = ({ children }) => {
                   </Link>
                 )}
               </li>
+
+              {/* Fees Manage */}
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+                <FaOutdent className="w-5 h-5" />
+                {sidebarOpen && (
+                  <Link to="/fees_manage" className="ml-4">
+                    Fees manage
+                  </Link>
+                )}
+              </li>
             </ul>
 
             {/* Logout */}
@@ -1015,70 +1025,6 @@ const MasterPage = ({ children }) => {
                 )}
               </li>
 
-              {/* Student Submenu */}
-              <li
-                className="py-4 px-4 hover:font-bold hover:scale-106 cursor-pointer flex items-center"
-                onClick={toggleStudentSubmenu}
-              >
-                <FaUsers className="w-5 h-5" />
-                {sidebarOpen && <span className="ml-4">Student</span>}
-                {sidebarOpen &&
-                  (studentSubmenuOpen ? (
-                    <IoMdArrowDropdown className="ml-auto" />
-                  ) : (
-                    <IoMdArrowDropright className="ml-auto" />
-                  ))}
-              </li>
-              {studentSubmenuOpen && (
-                <ul
-                  className={`transition-all duration-300 ${sidebarOpen
-                    ? "ml-10 bg-white p-2 rounded"
-                    : "absolute left-16 w-48 bg-white shadow-lg p-2 rounded"
-                    }`}
-                >
-                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
-                    <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/add_student">Add Student</Link>
-                  </li>
-                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
-                    <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/student_manage">Manage Students</Link>
-                  </li>
-                </ul>
-              )}
-
-              {/* Faculty Submenu */}
-              <li
-                className="py-4 px-4 hover:font-bold hover:scale-106 cursor-pointer flex items-center"
-                onClick={toggleFacultySubmenu}
-              >
-                <FaUsers className="w-5 h-5" />
-                {sidebarOpen && <span className="ml-4">Faculty</span>}
-                {sidebarOpen &&
-                  (facultySubmenuOpen ? (
-                    <IoMdArrowDropdown className="ml-auto" />
-                  ) : (
-                    <IoMdArrowDropright className="ml-auto" />
-                  ))}
-              </li>
-              {facultySubmenuOpen && (
-                <ul
-                  className={`transition-all duration-300 ${sidebarOpen
-                    ? "ml-10 bg-white p-2 rounded"
-                    : "absolute left-16 w-48 bg-white shadow-lg p-2 rounded"
-                    }`}
-                >
-                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
-                    <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/add_faculty">Add Faculty</Link>
-                  </li>
-                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
-                    <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/faculty_manage">Manage Faculty</Link>
-                  </li>
-                </ul>
-              )}
-
               {/* Material Submenu */}
               <li
                 className="py-4 px-4 hover:font-bold hover:scale-106 cursor-pointer flex items-center"
@@ -1100,10 +1046,6 @@ const MasterPage = ({ children }) => {
                     : "absolute left-16 w-48 bg-white shadow-lg p-2 rounded"
                     }`}
                 >
-                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
-                    <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/add_material">Add Material</Link>
-                  </li>
                   <li className="py-2 flex items-center hover:font-bold hover:scale-106">
                     <BsDot className="w-5 h-5 mr-2" />
                     <Link to="/materials">All Material</Link>
@@ -1134,57 +1076,12 @@ const MasterPage = ({ children }) => {
                 >
                   <li className="py-2 flex items-center hover:font-bold hover:scale-106">
                     <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/add_holiday">Add Holiday</Link>
-                  </li>
-                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
-                    <BsDot className="w-5 h-5 mr-2" />
                     <Link to="/holiday">Manage Holiday</Link>
                   </li>
                 </ul>
               )}
 
-              {/* Manage Class */}
-              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
-                <SiGoogleclassroom className="w-5 h-5" />
-                {sidebarOpen && (
-                  <Link to="/class_manage" className="ml-4">
-                    Manage Class
-                  </Link>
-                )}
-              </li>
-
-              {/* Manage Subject */}
-              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
-                <PiNotebookFill className="w-5 h-5" />
-                {sidebarOpen && (
-                  <Link to="/subject_manage" className="ml-4">
-                    Manage Subject
-                  </Link>
-                )}
-              </li>
-
-              {/* Manage Note */}
-              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
-                <GiNotebook className="w-5 h-5" />
-                {sidebarOpen && (
-                  <Link to="/note_manage" className="ml-4">
-                    Manage Note
-                  </Link>
-                )}
-              </li>
-
-
               {/* Add Leave */}
-              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
-                <CgNotes className="w-5 h-5" />
-                {sidebarOpen && (
-                  <Link to="/leave_manage" className="ml-4">
-                    Leave Manage
-                  </Link>
-                )}
-              </li>
-
-              {/* Leave Manage */}
               <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <FaOutdent className="w-5 h-5" />
                 {sidebarOpen && (

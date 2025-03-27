@@ -19,6 +19,7 @@ import Add_Material from "./pages/Add_Material";
 import Leave_Manage from "./pages/Leave_Manage";
 import Add_Leave from "./pages/Add_Leave";
 import Logout from "./pages/Logout";
+import Fess_manage from "./pages/fess_manage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import axios from "axios";
 import NotFound from "./components/NotFound"; // Import 404 Page
@@ -39,7 +40,7 @@ const App = () => {
         <Route path="/logout" element={ <Logout /> } />
         <Route path="/dashboard" element={ <ProtectedRoute element={<MasterPage><Dashboard /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
         <Route path="/student_manage" element={<ProtectedRoute element={<MasterPage><Student_Manage /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> } />
-        <Route path="/add_student" element={ <ProtectedRoute element={<MasterPage><Add_Student /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
+        <Route path="/add_student" element={ <ProtectedRoute element={<MasterPage><Add_Student /></MasterPage>} allowedRoles={[1, 2, 4]} userRole={userRole} /> }/>
         <Route path="/add_faculty" element={ <ProtectedRoute element={<MasterPage><Add_Faculty /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
         <Route path="/faculty_manage" element={ <ProtectedRoute element={<MasterPage><Faculty_Manage /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
         <Route path="/holiday" element={ <ProtectedRoute element={<MasterPage><Holiday /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
@@ -53,7 +54,7 @@ const App = () => {
         <Route path="/add_material" element={ <ProtectedRoute element={<MasterPage><Add_Material /></MasterPage>} allowedRoles={[1, 3]} userRole={userRole} /> }/>
         <Route path="/add_leave" element={ <ProtectedRoute element={<MasterPage><Add_Leave /></MasterPage>} allowedRoles={[1, 2, 3, 4]} userRole={userRole} /> }/>
         <Route path="/leave_manage" element={ <ProtectedRoute element={<MasterPage><Leave_Manage /></MasterPage>} allowedRoles={[1, 2, 3, 4]} userRole={userRole} /> }/>
-
+        <Route path="/fees_manage" element={ <ProtectedRoute element={<MasterPage><Fess_manage /></MasterPage>} allowedRoles={[1, 2, 3, 4]} userRole={userRole} /> }/>
         {/* Catch-All Route for 404 Page */}
         <Route path="*" element={<NotFound />} />
       </Routes>
