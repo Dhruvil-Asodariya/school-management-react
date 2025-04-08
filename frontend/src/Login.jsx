@@ -63,7 +63,7 @@ const Login = () => {
           <img src="./Logo/1.png" alt="Logo" />
         </div>
         <h2 className="text-2xl font-semibold mb-2">Welcome Back!</h2>
-        <p className="text-gray-500 mb-6">Sign in to continue to Edusphere.</p>
+        <p className="text-gray-500 mb-6">Sign in to continue to Easy way.</p>
 
         <form onSubmit={formik.handleSubmit} className="w-full max-w-sm">
           <div className="mb-4">
@@ -105,7 +105,7 @@ const Login = () => {
 
         <p className="mt-4 text-gray-500">
           Don’t have an account?{" "}
-          <Link to="/forgot-password" className="text-blue-600 hover:underline">
+          <Link to="/forgot_password" className="text-blue-600 hover:underline">
             Forgot Password?
           </Link>
         </p>

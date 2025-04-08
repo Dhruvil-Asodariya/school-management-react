@@ -10,6 +10,7 @@ import Swal from "sweetalert2";
 const StudentManage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [data, setData] = useState([]);
+  const [classes, setClasses] = useState([]);
   const [editStudent, setEditStudent] = useState(null); // ✅ Holds the selected student for editing
 
   // Fetch Students
@@ -34,28 +35,42 @@ const StudentManage = () => {
   // ✅ Handle Form Submission for Editing
   const handleUpdateStudent = async (e) => {
     e.preventDefault();
+    console.log("Updating student with data:", editStudent); // Debugging
+  
     try {
-      await axios.put(`http://localhost:8081/student/${editStudent.id}`, editStudent);
+      const response = await axios.put(`http://localhost:8081/student/${editStudent.id}`, {
+        firstName: editStudent.firstName,
+        lastName: editStudent.lastName,
+        phone_number: editStudent.phone_number,
+        emr_phone_number: editStudent.emr_phone_number,
+        dob: editStudent.dob || null,  // Ensure correct date format
+        address: editStudent.address,
+        gender: editStudent.gender,
+        class_id: editStudent.class, // Ensure correct key
+      });
+  
       Swal.fire({
         title: "Updated!",
-        text: "Student details have been updated.",
+        text: response.data.message || "Student details have been updated.",
         icon: "success",
-        timer: 1000, // 1-second timer
+        timer: 1000,
         showConfirmButton: false,
       });
+  
       fetchData();
       setEditStudent(null);
     } catch (error) {
-      console.error("Error updating student:", error);
+      console.error("Error updating student:", error.response?.data || error.message);
       Swal.fire({
         title: "Error!",
-        text: "Failed to update student details.",
+        text: error.response?.data?.error || "Failed to update student details.",
         icon: "error",
-        timer: 1000, // 1-second timer
+        timer: 1000,
         showConfirmButton: false,
       });
     }
   };
+  
 
   //Delete Student
   const handleDeleteClick = async (studentId) => {
@@ -81,6 +96,18 @@ const StudentManage = () => {
       }
     }
   };
+
+  // 🔹 Fetch class options from the database
+    useEffect(() => {
+      axios
+        .get("http://localhost:8081/class") // ✅ Adjust this to your actual API endpoint
+        .then((response) => {
+          setClasses(response.data); // ✅ Save fetched classes in state
+        })
+        .catch((error) => {
+          console.error("Error fetching classes:", error);
+        });
+    }, []);
 
   const students = data.map((student) => ({
     id: student.student_id,
@@ -158,7 +185,7 @@ const StudentManage = () => {
 
       {editStudent && (
         <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex justify-center items-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-1/2">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h2 className="text-xl font-semibold mb-4">Edit Student</h2>
             <form onSubmit={handleUpdateStudent}>
               {/* First Name */}
@@ -197,14 +224,6 @@ const StudentManage = () => {
                 onChange={(e) => setEditStudent({ ...editStudent, emr_phone_number: e.target.value })}
               />
 
-              {/* Date of Birth */}
-              <input
-                type="date"
-                className="w-full p-2 border rounded mb-2"
-                value={editStudent.dob}
-                onChange={(e) => setEditStudent({ ...editStudent, dob: e.target.value })}
-              />
-
               {/* Address */}
               <textarea
                 className="w-full p-2 border rounded mb-2"
@@ -230,10 +249,12 @@ const StudentManage = () => {
                 value={editStudent.class}
                 onChange={(e) => setEditStudent({ ...editStudent, class: e.target.value })}
               >
-                <option value="">Select Class</option>
-                <option value="1">Class 1</option>
-                <option value="2">Class 2</option>
-                <option value="3">Class 3</option>
+                <option value="">Choose...</option>
+                {classes.map((cls) => (
+                  <option key={cls.class} value={cls.class}>
+                    {cls.class_name}
+                  </option>
+                ))}
                 {/* Add more class options dynamically if needed */}
               </select>
 

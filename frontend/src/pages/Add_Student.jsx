@@ -85,13 +85,27 @@ const Add_Student = () => {
 
       } catch (error) {
         console.error("Error adding student:", error);
-        Swal.fire({
-          title: "Error!",
-          text: "Failed to add student",
-          icon: "error",
-          timer: 1000,
-          showConfirmButton: true,
-        });
+        // ✅ If email already exists, show an error
+        if (error.response && error.response.status === 400) {
+          Swal.fire({
+            toast: true,
+            position: "top",
+            icon: "warning",
+            title: "Duplicate Email!",
+            text: "This email is already registered. Please use a different email.",
+            showConfirmButton: false,
+            timer: 1500,
+            timerProgressBar: true,
+          });
+        } else {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to add student",
+            icon: "error",
+            timer: 1000,
+            showConfirmButton: true,
+          });
+        }
       }
     }
   });

@@ -6,6 +6,7 @@ import * as Yup from "yup";
 import Button from "../components/Button";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Reg_Title from "../components/Reg_Title";
 
 const Subject_Manage = () => {
   const [data, setData] = useState([]);
@@ -138,8 +139,8 @@ const Subject_Manage = () => {
   return (
     <div className="p-6 flex flex-row max-w-full justify-between gap-6">
       {/* Add Subject */}
-      <div className="bg-white shadow-md rounded-lg p-6 w-1/2">
-        <h2 className="text-xl font-bold mb-4">Add Subject</h2>
+      <div className="bg-white shadow-md rounded-lg p-6 w-1/2 h-55">
+      <Reg_Title name="Add Subject" />
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium">Subject Name</label>
@@ -161,7 +162,7 @@ const Subject_Manage = () => {
 
       {/* Subject List */}
       <div className="bg-white shadow-md rounded-lg p-6 w-1/2">
-        <h2 className="text-xl font-bold mb-4">Subject List</h2>
+      <Reg_Title name="All Subject List" />
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-200">
             <thead>

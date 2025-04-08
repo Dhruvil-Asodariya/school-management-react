@@ -11,20 +11,35 @@ const Leave_Manage = () => {
   // Get Leave list
   const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:8081/leave");
-      const formattedData = res.data.map((leave) => ({
-        id: leave.leave_id,
-        fullName: leave.full_name,
-        email: leave.email,
-        reason: leave.leave_reason,
-        days: leave.leave_day,
-        appliedOn: leave.applyed_on,
-        role: leave.role,
-        status: leave.status,
-      }));
-      setLeaveData(formattedData);
+      const res = await axios.get("http://localhost:8081/leave", {
+        withCredentials: true, // ✅ Includes cookies/session
+      });
+  
+      console.log("Leave API Response:", res.data); // ✅ Debugging
+  
+      if (Array.isArray(res.data)) {
+        const formattedData = res.data.map((leave) => ({
+          id: leave.leave_id,
+          fullName: leave.full_name,
+          email: leave.email,
+          reason: leave.leave_reason,
+          days: leave.leave_day,
+          appliedOn: leave.applyed_on,
+          role: leave.role,
+          status: leave.status,
+        }));
+        setLeaveData(formattedData);
+      } else {
+        console.warn("Unexpected leave data format:", res.data);
+        setLeaveData([]); // fallback to empty
+      }
     } catch (err) {
       console.error("Error fetching leave data:", err);
+  
+      if (err.response && err.response.status === 401) {
+        // Optional: redirect to login or show error message
+        console.warn("Unauthorized - user session may be missing or expired.");
+      }
     }
   };
 
@@ -43,13 +58,13 @@ const Leave_Manage = () => {
         email: leave_email,
         fullName: leave_full_name,
       });
-  
+
       // Update UI after a successful response
       const updatedLeaveData = leaveData.map((item) =>
         item.id === id ? { ...item, status: newStatus } : item
       );
       setLeaveData(updatedLeaveData);
-  
+
       // Show Swal success message
       Swal.fire({
         title: "Success!",
@@ -61,7 +76,7 @@ const Leave_Manage = () => {
       });
     } catch (err) {
       console.error("Error updating leave status:", err);
-  
+
       // Show error message if the update fails
       Swal.fire({
         title: "Error!",
@@ -73,7 +88,7 @@ const Leave_Manage = () => {
       });
     }
   };
-  
+
 
   const columns = [
     { name: "Sr No.", selector: (row, index) => index + 1, sortable: true },

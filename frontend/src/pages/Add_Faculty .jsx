@@ -68,15 +68,29 @@ const Add_Faculty = () => {
           showConfirmButton: false,
           timerProgressBar: true,
         }).then(() => navigate("/faculty_manage"));
-      } catch (err) {
-        console.error("Error adding faculty:", err);
-        Swal.fire({
-          title: "Error!",
-          text: "Failed to add faculty. Please try again.",
-          icon: "error",
-          timer: 1000,
-          showConfirmButton: true,
-        });
+      } catch (error) {
+        console.error("Error adding faculty:", error);
+        // ✅ If email already exists, show an error
+        if (error.response && error.response.status === 400) {
+          Swal.fire({
+            toast: true,
+            position: "top",
+            icon: "warning",
+            title: "Duplicate Email!",
+            text: "This email is already registered. Please use a different email.",
+            showConfirmButton: false,
+            timer: 1500,
+            timerProgressBar: true,
+          });
+        } else {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to add student",
+            icon: "error",
+            timer: 1000,
+            showConfirmButton: true,
+          });
+        }
       }
     },
   });
@@ -170,28 +184,39 @@ const Add_Faculty = () => {
             <div>
               <label className="block text-gray-700 font-medium pb-3">Subjects</label>
               <div className="flex flex-wrap gap-3">
-              {subjects.length > 0 ? (
-                subjects.map((subject) => (
-                  <label key={subject.subject_id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      name="subjects"
-                      value={subject.subject_name}
-                      checked={formik.values.subjects.includes(subject.name)}
-                      onChange={formik.handleChange}
-                      className="w-4 h-4"
-                    />
-                    <span>{subject.subject_name}</span>
-                  </label>
-                ))
-              ) : (
-                <p className="text-gray-500">Loading subjects...</p>
-              )}
+                {subjects.length > 0 ? (
+                  subjects.map((subject) => (
+                    <label key={subject.subject_id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        name="subjects"
+                        value={subject.subject_name} // ✅ Use correct subject property
+                        checked={formik.values.subjects.includes(subject.subject_name)} // ✅ Match with value
+                        onChange={(event) => {
+                          const { checked, value } = event.target;
+                          if (checked) {
+                            formik.setFieldValue("subjects", [...formik.values.subjects, value]); // ✅ Add selected subject
+                          } else {
+                            formik.setFieldValue(
+                              "subjects",
+                              formik.values.subjects.filter((s) => s !== value) // ✅ Remove unselected subject
+                            );
+                          }
+                        }}
+                        className="w-4 h-4"
+                      />
+                      <span>{subject.subject_name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-gray-500">Loading subjects...</p>
+                )}
               </div>
               {formik.touched.subjects && formik.errors.subjects && (
                 <span className="text-red-500 text-sm">{formik.errors.subjects}</span>
               )}
             </div>
+
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

@@ -131,13 +131,19 @@ const Holiday = () => {
     checkSession();
   }, []); // Runs only once on component mount
 
-  if(userSession?.role === 1){
+  const formatFullShortDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const options = { weekday: "short", day: "numeric", month: "short", year: "numeric" };
+    return date.toLocaleDateString("en-US", options); // ➜ Fri, 4 Apr 2025
+  };
+
+  if (userSession?.role === 1 || userSession?.role === 2) {
     return (
       <div className="p-6 bg-gray-100">
         <Link to="/add_holiday" className="inline-block mb-4">
           <Button name="+ Add Holiday" />
         </Link>
-  
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* ✅ Sidebar - Select Month */}
           <div className="bg-white p-4 rounded-lg shadow-lg">
@@ -155,14 +161,14 @@ const Holiday = () => {
               ))}
             </ul>
           </div>
-  
+
           {/* ✅ Holiday Table */}
           <div className="md:col-span-2 bg-white p-4 rounded-lg shadow-lg overflow-auto">
             <div className="text-lg font-semibold border-b pb-2 flex items-center space-x-4">
               <FaCalendarDays className="w-5 h-5" />
               <span>{months[selectedMonth - 1]}</span>
             </div>
-  
+
             <div className="overflow-x-auto">
               <table className="w-full mt-2 border border-gray-200">
                 <thead className="bg-blue-600 text-white">
@@ -179,7 +185,7 @@ const Holiday = () => {
                       <tr key={holiday.holiday_id} className="border-b border-gray-200">
                         <td className="px-4 py-2">{index + 1}</td>
                         <td className="px-4 py-2">{holiday.holiday_name}</td>
-                        <td className="px-4 py-2">{new Date(holiday.holiday_date).toLocaleDateString()}</td>
+                        <td className="px-4 py-2">{formatFullShortDate(holiday.holiday_date)}</td>
                         <td className="px-4 py-2 flex justify-center gap-4">
                           <button onClick={() => openEditModal(holiday)} className="text-blue-600 hover:text-blue-700">
                             <FaEdit className="w-5 h-5" />
@@ -202,7 +208,7 @@ const Holiday = () => {
             </div>
           </div>
         </div>
-  
+
         {/* ✅ Edit Holiday Modal */}
         {editModalOpen && (
           <div className="fixed inset-0 flex items-center justify-center bg-transparent backdrop-blur-sm">
@@ -219,7 +225,7 @@ const Holiday = () => {
         )}
       </div>
     );
-  }else{
+  } else {
     return (
       <div className="p-6 bg-gray-100">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -239,14 +245,14 @@ const Holiday = () => {
               ))}
             </ul>
           </div>
-  
+
           {/* ✅ Holiday Table */}
           <div className="md:col-span-2 bg-white p-4 rounded-lg shadow-lg overflow-auto">
             <div className="text-lg font-semibold border-b pb-2 flex items-center space-x-4">
               <FaCalendarDays className="w-5 h-5" />
               <span>{months[selectedMonth - 1]}</span>
             </div>
-  
+
             <div className="overflow-x-auto">
               <table className="w-full mt-2 border border-gray-200">
                 <thead className="bg-blue-600 text-white">
