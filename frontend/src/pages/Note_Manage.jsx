@@ -166,7 +166,7 @@ const ManageNote = () => {
     );
   }
 
-  if(userSession.role === 4){
+  if(userSession.role === 4 || userSession.role === 5){
     return (
       <div className="p-6 flex flex-row max-w-full justify-between gap-6">
         

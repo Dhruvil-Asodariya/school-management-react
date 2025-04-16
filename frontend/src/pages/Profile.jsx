@@ -4,7 +4,9 @@ import Swal from "sweetalert2";
 import { useState, useEffect } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
+import { toast, ToastContainer } from "react-toastify";
 import axios from "axios";
+import moment from "moment";
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -13,18 +15,21 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
 
   // Fetch profile data from the backend
-  useEffect(() => {
+  const fetchProfileData = () => {
     axios
       .get("http://localhost:8081/profile", { withCredentials: true })
       .then((response) => {
         const profile = response.data.profile;
         setProfilePic(profile.image || "vite.svg");
+        const formattedDob = profile.date_of_birth
+          ? moment(profile.dob).format("YYYY-MM-DD")
+          : "";
         formik.setValues({
           firstName: profile.first_name || "",
           lastName: profile.last_name || "",
           email: profile.email || "",
           phoneNo: profile.phone_no || "",
-          dob: profile.date_of_birth || "",
+          dob: formattedDob,
           gender: profile.gender || "",
           address: profile.address || "",
         });
@@ -35,6 +40,9 @@ const Profile = () => {
         Swal.fire("Error", "Failed to load profile data", "error");
         setLoading(false);
       });
+  };
+  useEffect(() => {
+    fetchProfileData();
   }, []);
 
   // Profile validation schema
@@ -100,6 +108,13 @@ const Profile = () => {
     const file = event.target.files[0];
     if (!file) return;
 
+    // ✅ Allowed file types
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.warning("Only PNG, JPG, and JPEG files are allowed.", { autoClose: 1000 });
+      return;
+    }
+
     const formData = new FormData();
     formData.append("profilePicture", file);
     formData.append("email", formik.values.email);
@@ -113,12 +128,15 @@ const Profile = () => {
       });
 
       setProfilePic(response.data.imageUrl); // Update profile picture in UI
-      Swal.fire("Success", "Profile picture updated!", "success");
-      window.location.reload();
+      toast.success("Profile picture updated!", { autoClose: 1000 });
       setIsEditModalOpen(false);
+
+      setTimeout(() => {
+        fetchProfileData();
+      }, 1500); // Give time for toast to be seen before reload
     } catch (error) {
       console.error("Error updating profile picture:", error);
-      Swal.fire("Error", error.response?.data?.error || "Failed to update profile picture", "error");
+      toast.error(error.response?.data?.error || "Failed to update profile picture", { autoClose: 1000 });
     }
   };
 
@@ -139,13 +157,16 @@ const Profile = () => {
           });
 
           Swal.fire({
-            title: "Deleted!",
-            text: "Your profile picture has been deleted.",
-            icon: "success",
-            timer: 1000, // Auto-close after 1 second
+            toast: true,
+            position: 'top',
+            icon: 'success',
+            title: 'Profile Picture Deleted Successfully!',
             showConfirmButton: false,
-          }).then(() => {
-            window.location.reload(); // Reload the page after Swal closes
+            timer: 1500,
+            timerProgressBar: true,
+            didClose: () => {
+              fetchProfileData(); // Refresh profile data after toast disappears
+            }
           });
 
         } catch (error) {
@@ -162,6 +183,7 @@ const Profile = () => {
   return (
     <>
       <section className="py-6 items-center justify-center">
+        <ToastContainer position="top-center" />
         <div className="container mx-auto p-6">
           <div className="flex flex-col md:flex-row gap-6">
             {/* Profile Card */}
@@ -323,20 +345,7 @@ const Profile = () => {
               </label>
 
               {/* Buttons */}
-              <div className="flex justify-end mt-4 space-x-3">
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleFileChange}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  Upload
-                </button>
-              </div>
+             
             </div>
           </div>
         )}

@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
-import Swal from "sweetalert2";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { RiLogoutBoxRLine } from "react-icons/ri";
 import { FaTachometerAlt, FaMoneyCheckAlt } from "react-icons/fa";
@@ -10,9 +9,9 @@ import { FaCalendarAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { GiNotebook } from "react-icons/gi";
 import { SiGoogleclassroom } from "react-icons/si";
-// import { CgNotes } from "react-icons/cg";
+import { CgNotes } from "react-icons/cg";
 import { AiFillRead } from "react-icons/ai";
-// import { FaOutdent } from "react-icons/fa";
+import { FaOutdent } from "react-icons/fa";
 import { PiNotebookFill } from "react-icons/pi";
 import { IoMdArrowDropdown, IoMdArrowDropright } from "react-icons/io";
 import { FaUser, FaCog, FaSignOutAlt, FaKey, FaLock } from "react-icons/fa";
@@ -57,7 +56,7 @@ const MasterPage = ({ children }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [studentSubmenuOpen, setStudentSubmenuOpen] = useState(false);
   const [facultySubmenuOpen, setFacultySubmenuOpen] = useState(false);
-  // const [principalSubmenuOpen, setPrincipalSubmenuOpen] = useState(false);
+  const [principalSubmenuOpen, setPrincipalSubmenuOpen] = useState(false);
   const [materialSubmenuOpen, setMaterialSubmenuOpen] = useState(false);
   const [feeSubmenuOpen, setFeeSubmenuOpen] = useState(false);
   const [holidaySubmenuOpen, setHolidaySubmenuOpen] = useState(false);
@@ -65,6 +64,7 @@ const MasterPage = ({ children }) => {
     const savedLock = localStorage.getItem("isLocked");
     return savedLock === "true";
   });
+  const [error, setError] = useState("");
   const [password, setPassword] = useState("");
   const [userSession, setUserSession] = useState(null);
   const [lockPassword, setLockPassword] = useState(null);
@@ -72,6 +72,7 @@ const MasterPage = ({ children }) => {
   const [image, setImage] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const dropdownRef = useRef(null);
   const correctPassword = lockPassword;
 
 
@@ -80,7 +81,7 @@ const MasterPage = ({ children }) => {
 
   const toggleStudentSubmenu = () => setStudentSubmenuOpen(!studentSubmenuOpen);
   const toggleFacultySubmenu = () => setFacultySubmenuOpen(!facultySubmenuOpen);
-  // const togglePrincipalSubmenu = () => setPrincipalSubmenuOpen(!principalSubmenuOpen);
+  const togglePrincipalSubmenu = () => setPrincipalSubmenuOpen(!principalSubmenuOpen);
   const toggleMaterialSubmenu = () => setMaterialSubmenuOpen(!materialSubmenuOpen);
   const toggleFeeSubmenu = () => setFeeSubmenuOpen(!feeSubmenuOpen);
   const toggleHolidaySubmenu = () => setHolidaySubmenuOpen(!holidaySubmenuOpen);
@@ -95,23 +96,25 @@ const MasterPage = ({ children }) => {
       setIsLocked(false);
       localStorage.setItem("isLocked", "false");
       setPassword("");
+      setError(""); // Clear any previous error
     } else {
-      Swal.fire({
-        icon: "warning",
-        title: "Incorrect Password",
-        confirmButtonText: "Try Again",
-        position: "top",
-        toast: false,
-        showConfirmButton: true,
-        timer: 5000,
-        customClass: {
-          popup: "top-10 w-[500px] h-[300px]",
-        },
-      });
+      setError("Incorrect password. Please try again.");
     }
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
 
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
 
   // Fetch Students
@@ -148,13 +151,7 @@ const MasterPage = ({ children }) => {
     return <p className="text-center text-lg font-semibold text-blue-600 animate-pulse">Loading...</p>;
   }
 
-  if (!userSession) {
-    return (
-      <p className="text-center text-lg font-semibold text-red-600 bg-red-100 p-4 rounded-lg shadow-md">
-        🚫 Unauthorized: Please log in.
-      </p>
-    );
-  }
+
 
   if (userSession.role === 1) {
     return (
@@ -167,7 +164,7 @@ const MasterPage = ({ children }) => {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative">
+            <div ref={dropdownRef} className="relative">
               <button
                 onClick={toggleDropdown}
                 className="bg-dark-500 p-2 rounded text-white flex items-center"
@@ -176,25 +173,22 @@ const MasterPage = ({ children }) => {
                 {firstName + " " + lastName}
                 <IoMdArrowDropdown className="ml-2 w-5 h-5" />
               </button>
+
               {dropdownOpen && (
-                <ul className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg">
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                <ul className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg z-50">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaUser className="w-4 h-4" />
                     <Link to="/profile">Profile</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaKey className="w-4 h-4" />
                     <Link to="/change_password">Change Password</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102 border-b border-gray-300" onClick={() => setDropdownOpen(false)}>
                     <FaLock className="w-4 h-4" />
                     <button onClick={handleLockScreen}>Lock Screen</button>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102">
-                    <FaCog className="w-4 h-4" />
-                    <Link to="/settings">Settings</Link>
-                  </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaSignOutAlt className="w-4 h-4" />
                     <Link to="/logout">Logout</Link>
                   </li>
@@ -206,27 +200,53 @@ const MasterPage = ({ children }) => {
 
         {/* Lock Screen Modal */}
         {isLocked && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center text-white z-50">
-            <div className="bg-gradient-to-r from-purple-500 via-blue-500 to-green-500 text-black p-8 rounded-lg shadow-2xl w-96">
-              <h2 className="text-xl font-bold mb-4 text-center text-white">
-                Screen Locked
-              </h2>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl p-8 w-[90%] max-w-md shadow-2xl text-center transition-all duration-500 text-white">
+              <div className="mb-4 animate-pulse">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="mx-auto h-12 w-12 text-white/90"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 11c1.656 0 3-1.344 3-3V5a3 3 0 00-6 0v3c0 1.656 1.344 3 3 3zm6 2H6a2 2 0 00-2 2v5a2 2 0 002 2h12a2 2 0 002-2v-5a2 2 0 00-2-2z"
+                  />
+                </svg>
+              </div>
+
+              <h2 className="text-2xl font-semibold mb-2">Screen Locked</h2>
+              <p className="text-sm text-white/70 mb-6">Enter your password to unlock the screen</p>
+
               <input
                 type="password"
-                className="border p-3 w-full font-bold text-white rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
                 placeholder="Enter Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-white/10 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400 mb-2"
               />
+
+              {/* Error Message */}
+              {error && (
+                <p className="text-sm text-red-400 mb-4 font-medium transition duration-300 animate-shake">
+                  {error}
+                </p>
+              )}
+
               <button
-                className="bg-gradient-to-r from-blue-500 via-teal-500 to-green-500 text-white px-8 py-4 rounded-lg w-full transform transition duration-300 ease-in-out hover:scale-110 hover:shadow-2xl hover:border-4 hover:border-white active:scale-95 active:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-300"
                 onClick={handleUnlock}
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-blue-600 via-cyan-500 to-green-500 text-white font-medium shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95"
               >
                 Unlock
               </button>
             </div>
           </div>
         )}
+
 
         {/* Layout Below Navbar */}
         <div className="flex flex-1 pt-13">
@@ -318,7 +338,7 @@ const MasterPage = ({ children }) => {
               )}
 
               {/* Principal Submenu */}
-              {/* <li
+              <li
                 className="py-4 px-4 hover:font-bold hover:scale-106 cursor-pointer flex items-center"
                 onClick={togglePrincipalSubmenu}
               >
@@ -347,7 +367,7 @@ const MasterPage = ({ children }) => {
                     <Link to="/principal_manage">Manage Principal</Link>
                   </li>
                 </ul>
-              )} */}
+              )}
 
               {/* Material Submenu */}
               <li
@@ -478,14 +498,14 @@ const MasterPage = ({ children }) => {
 
 
               {/* Add Leave */}
-              {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <CgNotes className="w-5 h-5" />
                 {sidebarOpen && (
                   <Link to="/leave_manage" className="ml-4">
                     Leave Manage
                   </Link>
                 )}
-              </li> */}
+              </li>
 
               {/* Leave Manage */}
               {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
@@ -535,7 +555,7 @@ const MasterPage = ({ children }) => {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative">
+            <div ref={dropdownRef} className="relative">
               <button
                 onClick={toggleDropdown}
                 className="bg-dark-500 p-2 rounded text-white flex items-center"
@@ -546,23 +566,23 @@ const MasterPage = ({ children }) => {
               </button>
               {dropdownOpen && (
                 <ul className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg">
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaUser className="w-4 h-4" />
                     <Link to="/profile">Profile</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaKey className="w-4 h-4" />
                     <Link to="/change_password">Change Password</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaLock className="w-4 h-4" />
                     <button onClick={handleLockScreen}>Lock Screen</button>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaCog className="w-4 h-4" />
                     <Link to="/settings">Settings</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaSignOutAlt className="w-4 h-4" />
                     <Link to="/logout">Logout</Link>
                   </li>
@@ -781,24 +801,24 @@ const MasterPage = ({ children }) => {
 
 
               {/* Add Leave */}
-              {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <CgNotes className="w-5 h-5" />
                 {sidebarOpen && (
                   <Link to="/leave_manage" className="ml-4">
                     Leave Manage
                   </Link>
                 )}
-              </li> */}
+              </li>
 
               {/* Leave Manage */}
-              {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <FaOutdent className="w-5 h-5" />
                 {sidebarOpen && (
                   <Link to="/add_leave" className="ml-4">
                     Add Leave
                   </Link>
                 )}
-              </li> */}
+              </li>
             </ul>
 
             {/* Logout */}
@@ -838,7 +858,7 @@ const MasterPage = ({ children }) => {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative">
+            <div ref={dropdownRef} className="relative">
               <button
                 onClick={toggleDropdown}
                 className="bg-dark-500 p-2 rounded text-white flex items-center"
@@ -849,23 +869,23 @@ const MasterPage = ({ children }) => {
               </button>
               {dropdownOpen && (
                 <ul className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg">
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaUser className="w-4 h-4" />
                     <Link to="/profile">Profile</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaKey className="w-4 h-4" />
                     <Link to="/change_password">Change Password</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaLock className="w-4 h-4" />
                     <button onClick={handleLockScreen}>Lock Screen</button>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaCog className="w-4 h-4" />
                     <Link to="/settings">Settings</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaSignOutAlt className="w-4 h-4" />
                     <Link to="/logout">Logout</Link>
                   </li>
@@ -1149,24 +1169,24 @@ const MasterPage = ({ children }) => {
 
 
               {/* Add Leave */}
-              {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <CgNotes className="w-5 h-5" />
                 {sidebarOpen && (
                   <Link to="/leave_manage" className="ml-4">
                     Leave Manage
                   </Link>
                 )}
-              </li> */}
+              </li>
 
               {/* Leave Manage */}
-              {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <FaOutdent className="w-5 h-5" />
                 {sidebarOpen && (
                   <Link to="/add_leave" className="ml-4">
                     Add Leave
                   </Link>
                 )}
-              </li> */}
+              </li>
             </ul>
 
             {/* Logout */}
@@ -1206,7 +1226,7 @@ const MasterPage = ({ children }) => {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative">
+            <div ref={dropdownRef} className="relative">
               <button
                 onClick={toggleDropdown}
                 className="bg-dark-500 p-2 rounded text-white flex items-center"
@@ -1217,23 +1237,23 @@ const MasterPage = ({ children }) => {
               </button>
               {dropdownOpen && (
                 <ul className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg">
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaUser className="w-4 h-4" />
                     <Link to="/profile">Profile</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaKey className="w-4 h-4" />
                     <Link to="/change_password">Change Password</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaLock className="w-4 h-4" />
                     <button onClick={handleLockScreen}>Lock Screen</button>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaCog className="w-4 h-4" />
                     <Link to="/settings">Settings</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaSignOutAlt className="w-4 h-4" />
                     <Link to="/logout">Logout</Link>
                   </li>
@@ -1346,14 +1366,24 @@ const MasterPage = ({ children }) => {
               )}
 
               {/* Add Leave */}
-              {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <FaOutdent className="w-5 h-5" />
                 {sidebarOpen && (
                   <Link to="/add_leave" className="ml-4">
                     Add Leave
                   </Link>
                 )}
-              </li> */}
+              </li>
+
+              {/* Manage Note */}
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+                <GiNotebook className="w-5 h-5" />
+                {sidebarOpen && (
+                  <Link to="/note_manage" className="ml-4">
+                    Note
+                  </Link>
+                )}
+              </li>
 
               {/* Add Parent Data */}
               {/* <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
@@ -1364,15 +1394,7 @@ const MasterPage = ({ children }) => {
                   </Link>
                 )}
               </li> */}
-              {/* Manage Note */}
-              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
-                <GiNotebook className="w-5 h-5" />
-                {sidebarOpen && (
-                  <Link to="/note_manage" className="ml-4">
-                    Manage Note
-                  </Link>
-                )}
-              </li>
+
             </ul>
 
 
@@ -1414,7 +1436,7 @@ const MasterPage = ({ children }) => {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="relative">
+            <div ref={dropdownRef} className="relative">
               <button
                 onClick={toggleDropdown}
                 className="bg-dark-500 p-2 rounded text-white flex items-center"
@@ -1425,23 +1447,23 @@ const MasterPage = ({ children }) => {
               </button>
               {dropdownOpen && (
                 <ul className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg">
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaUser className="w-4 h-4" />
                     <Link to="/profile">Profile</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaKey className="w-4 h-4" />
                     <Link to="/change_password">Change Password</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaLock className="w-4 h-4" />
                     <button onClick={handleLockScreen}>Lock Screen</button>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold border-b border-gray-300 hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaCog className="w-4 h-4" />
                     <Link to="/settings">Settings</Link>
                   </li>
-                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102">
+                  <li className="px-4 py-2 flex items-center gap-2 hover:font-bold hover:scale-102" onClick={() => setDropdownOpen(false)}>
                     <FaSignOutAlt className="w-4 h-4" />
                     <Link to="/logout">Logout</Link>
                   </li>

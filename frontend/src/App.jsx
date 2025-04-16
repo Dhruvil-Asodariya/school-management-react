@@ -43,14 +43,14 @@ const App = () => {
     <Router>
       <Routes>
         {/* Wrap routes with MasterPage */}
-        <Route path="/" element={ <Login /> } />
+        <Route path="/" element={ <Login setUserRole={setUserRole} /> } />
         <Route path="/logout" element={ <Logout /> } />
         <Route path="/forgot_password" element={ <Forgot_Password /> } />
         <Route path="/verify_otp" element={ <OTP_Verify /> } />
         <Route path="/reset_password" element={ <Reset_Password /> } />
         <Route path="/dashboard" element={ <ProtectedRoute element={<MasterPage><Dashboard /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
         <Route path="/student_manage" element={<ProtectedRoute element={<MasterPage><Student_Manage /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> } />
-        <Route path="/add_student" element={ <ProtectedRoute element={<MasterPage><Add_Student /></MasterPage>} allowedRoles={[1, 2, 4]} userRole={userRole} /> }/>
+        <Route path="/add_student" element={ <ProtectedRoute element={<MasterPage><Add_Student /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
         <Route path="/add_faculty" element={ <ProtectedRoute element={<MasterPage><Add_Faculty /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
         <Route path="/faculty_manage" element={ <ProtectedRoute element={<MasterPage><Faculty_Manage /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
         <Route path="/add_principal" element={ <ProtectedRoute element={<MasterPage><Add_Principal /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
@@ -63,7 +63,7 @@ const App = () => {
         <Route path="/subject_manage" element={ <ProtectedRoute element={<MasterPage><Subject_Manage /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
         <Route path="/note_manage" element={ <ProtectedRoute element={<MasterPage><Note_Manage /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
         <Route path="/materials" element={ <ProtectedRoute element={<MasterPage><Material /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
-        <Route path="/add_material" element={ <ProtectedRoute element={<MasterPage><Add_Material /></MasterPage>} allowedRoles={[1, 3]} userRole={userRole} /> }/>
+        <Route path="/add_material" element={ <ProtectedRoute element={<MasterPage><Add_Material /></MasterPage>} allowedRoles={[1, 2, 3]} userRole={userRole} /> }/>
         <Route path="/add_leave" element={ <ProtectedRoute element={<MasterPage><Add_Leave /></MasterPage>} allowedRoles={[1, 2, 3, 4]} userRole={userRole} /> }/>
         <Route path="/leave_manage" element={ <ProtectedRoute element={<MasterPage><Leave_Manage /></MasterPage>} allowedRoles={[1, 2, 3, 4]} userRole={userRole} /> }/>
         <Route path="/fees_manage" element={ <ProtectedRoute element={<MasterPage><Fees_Manage /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>

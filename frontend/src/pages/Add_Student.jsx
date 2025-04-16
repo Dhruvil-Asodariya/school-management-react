@@ -34,7 +34,16 @@ const Add_Student = () => {
     dob: Yup.string().required("Please enter Date Of Birth"),
     gender: Yup.string().required("Please select Gender"),
     address: Yup.string().required("Please enter Address"),
-    image: Yup.mixed().required("Please select Image"),
+    image: Yup.mixed()
+      .required("Please select Image")
+      .test(
+        "fileType",
+        "Only PNG, JPG and JPEG files are allowed",
+        (value) =>
+          value &&
+          ["image/png", "image/jpg", "image/jpeg"].includes(value.type)
+      ),
+
   });
 
   const formik = useFormik({
@@ -298,6 +307,7 @@ const Add_Student = () => {
             <input
               type="file"
               name="image"
+              accept="image/png, image/jpg, image/jpeg" // ✅ Restrict file picker
               className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               onChange={(event) =>
                 formik.setFieldValue("image", event.currentTarget.files[0])

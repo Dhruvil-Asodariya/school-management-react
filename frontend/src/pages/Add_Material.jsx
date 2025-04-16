@@ -81,7 +81,7 @@ const Add_Student = () => {
   return (
     <div className="flex justify-center items-center">
       <div className="w-full bg-gray-10 shadow-lg rounded-lg p-6 mt-3">
-        <Form_Title name="Add New Student" />
+        <Form_Title name="Add New Material" />
         <form className="space-y-4" onSubmit={formik.handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Material Title */}

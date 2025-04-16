@@ -79,7 +79,6 @@ const StudentManage = () => {
       text: "You won't be able to revert this!",
       icon: "warning",
       showCancelButton: true,
-      timer: 1000,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
       confirmButtonText: "Yes, delete it!",

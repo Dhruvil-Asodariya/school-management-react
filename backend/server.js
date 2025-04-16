@@ -20,8 +20,10 @@ app.use(cors({
     // methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
-app.use(express.json())
+app.use(express.json());
 app.use(express.static("uploads")); // Serve uploaded images
+
+
 
 const db = mysql.createConnection({
     host: "localhost",
@@ -42,8 +44,8 @@ db.connect((err) => {
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "#", // Replace with your email
-        pass: "#", // Use App Password if 2FA is enabled
+        user: "asodariyadhruvil80@gmail.com", // Replace with your email
+        pass: "isrp beru suck cryk", // Use App Password if 2FA is enabled
     },
 });
 
@@ -99,7 +101,6 @@ app.use(session({
 
 
 //Login
-
 app.post("/login", (req, res) => {
     const { userName, password } = req.body;
 
@@ -378,6 +379,10 @@ app.post("/change_password", async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     const userEmail = req.session.user.email;
 
+    req.session.pass = {
+        password: newPassword,
+    };
+
     try {
         // Fetch user from DB
         const sql = "SELECT password FROM user_detail WHERE user_name = ?";
@@ -410,7 +415,9 @@ app.post("/change_password", async (req, res) => {
                     console.error("Update Error:", updateErr);
                     return res.status(500).json({ error: "Could not update password" });
                 }
-
+                req.session.pass = {
+                    password: newPassword,
+                };
                 res.json({ message: "Password changed successfully" });
             });
         });
@@ -924,7 +931,7 @@ app.get('/parent', (req, res) => {
             message: "Unauthorized access",
             session: req.session  // ✅ Debugging: Show session object
         });
-    }   
+    }
     const ID = req.session.user.id;
 
     const sql = "SELECT student_id FROM parent_detail WHERE student_id = ?";
@@ -932,7 +939,7 @@ app.get('/parent', (req, res) => {
         if (err) return res.json({ Message: "Error inside server" });
         return res.json(result);
     })
-    
+
 })
 
 // Get Principal
@@ -1195,48 +1202,54 @@ app.get('/leave', (req, res) => {
 
 // Add Leave
 app.post('/leave', (req, res) => {
-    console.log("🔍 Received Leave Request:", req.body);
-
-    // Check for active session and user info
-    if (!req.session || !req.session.user) {
-        return res.status(401).json({ message: "Unauthorized: No active session." });
+    if (!req.session.user) {
+        return res.status(401).json({ message: "Unauthorized. Please log in." });
     }
 
-    const { fullName, leaveReason, leaveFrom, leaveTo } = req.body;
-    const applied_on = new Date().toISOString().slice(0, 10);
+    const { leaveReason, fromDate, toDate } = req.body;
+    const { id, role } = req.session.user;
 
-    // Retrieve email and role from session
-    const { email, role } = req.session.user;
+    let role_name, sql;
 
-    // Map role number to role name
-    let role_name;
-    switch (role) {
-        case 1: role_name = "Admin"; break;
-        case 2: role_name = "Principal"; break;
-        case 3: role_name = "Faculty"; break;
-        case 4: role_name = "Student"; break;
-        default: role_name = "Parent";
+    if (role === 3) {
+        role_name = "Faculty";
+        sql = "SELECT first_name, last_name, email FROM faculty_detail WHERE user_id = ?";
+    } else {
+        role_name = "Student";
+        sql = "SELECT first_name, last_name, email FROM student_detail WHERE user_id = ?";
     }
 
-    // Validate all required fields
-    if (!email || !fullName || !leaveReason || !leaveFrom || !leaveTo) {
-        return res.status(400).json({ message: "All fields are required." });
-    }
-
-    const sql = `
-        INSERT INTO leave_detail (email, full_name, leave_reason, leave_from, leave_to, applied_on, role)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    db.query(sql, [email, fullName, leaveReason, leaveFrom, leaveTo, applied_on, role_name], (err, result) => {
+    db.query(sql, [id], (err, result) => {
         if (err) {
-            console.error("❌ Error inserting leave:", err);
-            return res.status(500).json({ message: "Failed to submit leave request", error: err.message });
+            console.error("SQL Error:", err);
+            return res.status(500).json({ message: "Error inside server", error: err });
         }
-        res.status(201).json({ message: "Leave request submitted successfully!" });
+
+        if (result.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const { first_name, last_name, email } = result[0];
+        const fullName = `${first_name} ${last_name}`;
+        const start = new Date(fromDate);
+        const end = new Date(toDate);
+        const oneDay = 1000 * 60 * 60 * 24;
+        const diffInDays = Math.round((end - start) / oneDay) + 1;
+        const today = new Date();
+        const current_date = today.toISOString().split("T")[0];
+
+        const Sql = `INSERT INTO leave_detail (full_name, email, leave_reason, leave_day, applyed_on, role) 
+                   VALUES (?, ?, ?, ?, ?, ?)`;
+
+        db.query(Sql, [fullName, email, leaveReason, diffInDays, current_date, role_name], (err, result) => {
+            if (err) {
+                console.error("SQL Error:", err);
+                return res.status(500).json({ message: "Database insertion error", error: err });
+            }
+            res.status(200).json({ message: "Leave application submitted successfully" });
+        });
     });
 });
-
 
 //Update Status on Leave
 app.patch("/leave/:id", (req, res) => {
@@ -1283,34 +1296,48 @@ app.get("/materials", (req, res) => {
     }
 
     const userID = req.session.user.id;
+    const { role } = req.session.user;
 
-    // 1️⃣ Get the class_id of the student
-    const classQuery = "SELECT class_id FROM student_detail WHERE user_id = ?";
-
-    db.query(classQuery, [userID], (err, classResult) => {
-        if (err) {
-            console.error("Error fetching class:", err);
-            return res.status(500).json({ error: "Database error" });
-        }
-
-        if (classResult.length === 0) {
-            return res.status(404).json({ error: "Student not found" });
-        }
-
-        const studentClass = classResult[0].class_id;
-
-        // 2️⃣ Fetch materials that match this class
-        const materialQuery = "SELECT * FROM material_detail WHERE class = ?";
-        db.query(materialQuery, [studentClass], (err, materials) => {
+    // ✅ Roles 1 (Admin), 2 (Parent), 3 (Faculty) get all materials
+    if (role == 1 || role == 2 || role == 3) {
+        const materialQuery = "SELECT * FROM material_detail";
+        db.query(materialQuery, (err, materials) => {
             if (err) {
                 console.error("Error fetching materials:", err);
                 return res.status(500).json({ error: "Database error" });
             }
 
-            res.json(materials);
+            return res.json(materials);
         });
-    });
+    } else {
+        // 👨‍🎓 Assume student role (role === 4 or anything else)
+        const classQuery = "SELECT class_id FROM student_detail WHERE user_id = ?";
+
+        db.query(classQuery, [userID], (err, classResult) => {
+            if (err) {
+                console.error("Error fetching class:", err);
+                return res.status(500).json({ error: "Database error" });
+            }
+
+            if (classResult.length === 0) {
+                return res.status(404).json({ error: "Student not found" });
+            }
+
+            const studentClass = classResult[0].class_id;
+
+            const materialQuery = "SELECT * FROM material_detail WHERE class = ?";
+            db.query(materialQuery, [studentClass], (err, materials) => {
+                if (err) {
+                    console.error("Error fetching materials:", err);
+                    return res.status(500).json({ error: "Database error" });
+                }
+
+                return res.json(materials);
+            });
+        });
+    }
 });
+
 
 // Add New Material
 const material_upload = multer({ storage: material_storage });
@@ -1645,7 +1672,7 @@ app.get("/dashboard_totals", (req, res) => {
             queries = {
                 students: "SELECT COUNT(*) AS total FROM student_detail",
                 faculty: "SELECT COUNT(*) AS total FROM faculty_detail",
-                parent: "SELECT COUNT(*) AS total FROM parent_detail",
+                principal: "SELECT COUNT(*) AS total FROM principal_detail",
                 classes: "SELECT COUNT(*) AS total FROM class_detail",
                 subjects: "SELECT COUNT(*) AS total FROM subject_detail",
                 pending_fees: "SELECT COALESCE(SUM(tuition_fee + exam_fee), 0) AS total FROM fees_detail WHERE status = 0",
@@ -1654,7 +1681,7 @@ app.get("/dashboard_totals", (req, res) => {
             queries = {
                 students: "SELECT COUNT(*) AS total FROM student_detail",
                 faculty: "SELECT COUNT(*) AS total FROM faculty_detail",
-                parent: "SELECT COUNT(*) AS total FROM parent_detail",
+                principal: "SELECT COUNT(*) AS total FROM principal_detail",
                 classes: "SELECT COUNT(*) AS total FROM class_detail",
                 subjects: "SELECT COUNT(*) AS total FROM subject_detail",
                 pending_fees: "SELECT COALESCE(SUM(tuition_fee + exam_fee), 0) AS total FROM fees_detail WHERE email = ? AND status = 0",

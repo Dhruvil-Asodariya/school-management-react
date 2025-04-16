@@ -51,7 +51,7 @@ const Change_Password = () => {
 
     return (
         <div className="flex justify-center items-center mt-3">
-            <div className="bg-gray-100 p-6 rounded-lg shadow-lg w-full max-w-md">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-1/2">
                 <h2 className="text-xl font-semibold mb-4 text-center">Change Password</h2>
                 <form onSubmit={formik.handleSubmit} className="space-y-4">
                     <div>

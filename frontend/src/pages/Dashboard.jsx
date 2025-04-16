@@ -35,7 +35,7 @@ const Dashboard = () => {
           setTotals({
             students: response.data.students || 0,
             faculty: response.data.faculty || 0,
-            parent: response.data.parent || 0,
+            principal: response.data.principal || 0,
             classes: response.data.classes || 0,
             subjects: response.data.subjects || 0,
             pending_fees: response.data.pending_fees || 0,
@@ -58,11 +58,11 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-wrap gap-6 justify-start">
-      {userSession.role === 1 || userSession.role === 3 ? (
+      {userSession.role === 1 ? (
         <>
           <Dashboard_Card name="Students" total={totals.students} link="/student_manage" />
-          <Dashboard_Card name="Teachers" total={totals.faculty} link="/faculty_manage" />
-          <Dashboard_Card name="Parents" total={totals.parent} link="/parent_manage" />
+          <Dashboard_Card name="Faculty" total={totals.faculty} link="/faculty_manage" />
+          <Dashboard_Card name="Principal" total={totals.principal} link="/principal_manage" />
           <Dashboard_Card name="Class" total={totals.classes} link="/class_manage" />
           <Dashboard_Card name="Subjects" total={totals.subjects} link="/subject_manage" />
           <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/fees_manage" />
@@ -71,7 +71,22 @@ const Dashboard = () => {
         <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/pending_fees_manage" />
       ) : userSession.role === 5 ? (
         <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/pending_fees_manage" />
-      ) :  (
+      ) : userSession.role === 2 ? (
+        <>
+          <Dashboard_Card name="Students" total={totals.students} link="/student_manage" />
+          <Dashboard_Card name="Faculty" total={totals.faculty} link="/faculty_manage" />
+          <Dashboard_Card name="Class" total={totals.classes} link="/class_manage" />
+          <Dashboard_Card name="Subjects" total={totals.subjects} link="/subject_manage" />
+          <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/fees_manage" />
+        </>
+      ) : userSession.role === 3 ? (
+        <>
+          <Dashboard_Card name="Students" total={totals.students} link="/student_manage" />
+          <Dashboard_Card name="Class" total={totals.classes} link="/class_manage" />
+          <Dashboard_Card name="Subjects" total={totals.subjects} link="/subject_manage" />
+          <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/fees_manage" />
+        </>
+      ) : (
         <div>❌ Unauthorized access</div>
       )}
     </div>
