@@ -21,23 +21,24 @@ const Material = () => {
     }
   };
 
-  // ✅ Fetch All Materials
+  // ✅ Fetch All Materials and store in both data and filteredData
   const fetchMaterials = async () => {
     try {
-      const res = await axios.get("http://localhost:8081/materials",{ withCredentials: true, });
-      setFilteredData(res.data);
+      const res = await axios.get("http://localhost:8081/materials", {
+        withCredentials: true,
+      });
+      setData(res.data); // Store all data
+      setFilteredData(res.data); // Initialize filtered view
     } catch (err) {
       console.error("Error fetching Material:", err);
     }
   };
 
-  // ✅ Make sure session check finishes first
   useEffect(() => {
     const loadData = async () => {
       await checkSession();
       await fetchMaterials();
     };
-
     loadData();
   }, []);
 
@@ -45,9 +46,16 @@ const Material = () => {
   const handleSearchChange = (e) => {
     const value = e.target.value;
     setSearchTerm(value);
-    const filtered = data.filter((material) =>
-      material.subject?.toLowerCase().includes(value.toLowerCase())
-    );
+
+    const filtered = data.filter((material) => {
+      const term = value.toLowerCase();
+      return (
+        material.subject?.toLowerCase().includes(term) ||
+        material.material_title?.toLowerCase().includes(term) ||
+        material.chapter?.toLowerCase().includes(term)
+      );
+    });
+
     setFilteredData(filtered);
   };
 
@@ -87,13 +95,13 @@ const Material = () => {
   return (
     <div className="p-6">
       {/* 🔍 Search Bar */}
-      <div className="mb-4">
+      <div className="flex justify-end mb-4">
         <input
           type="text"
-          placeholder="Search by Subject..."
+          placeholder="Search by Subject, Title or Chapter..."
           value={searchTerm}
           onChange={handleSearchChange}
-          className="border rounded-lg p-2 w-full"
+          className="px-4 py-2 border rounded focus:ring focus:ring-blue-300 focus:outline-none focus:border-sky-600 w-full max-w-sm"
         />
       </div>
 
@@ -103,11 +111,30 @@ const Material = () => {
           filteredData.map((material) => (
             <div
               key={material.material_id}
-              className="bg-white shadow-lg rounded-xl p-4 flex flex-col items-center text-center border border-gray-200 hover:shadow-xl transition-shadow duration-300"
+              className="bg-white shadow-md hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 ease-in-out rounded-xl p-4 flex flex-col items-center text-center border border-gray-200 cursor-default"
             >
-              {/* 📝 PDF Icon */}
-              <div className="w-24 h-24 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                <img src="pdf.png" alt={material.material_title} className="w-12 h-12" />
+              {/* 📝 File Icon */}
+              <div
+                className={`w-24 h-24 rounded-lg flex items-center justify-center mb-4 ${material.material_file?.toLowerCase().endsWith(".pdf")
+                  ? "bg-red-100"
+                  : material.material_file?.toLowerCase().endsWith(".doc") ||
+                    material.material_file?.toLowerCase().endsWith(".docx")
+                    ? "bg-blue-100"
+                    : "bg-gray-100"
+                  }`}
+              >
+                {material.material_file ? (
+                  <>
+                    {material.material_file.toLowerCase().endsWith(".pdf") ? (
+                      <img src="pdf.png" alt="PDF" className="w-12 h-12 pointer-events-none" />
+                    ) : material.material_file.toLowerCase().endsWith(".doc") ||
+                      material.material_file.toLowerCase().endsWith(".docx") ? (
+                      <img src="doc.png" alt="Word" className="w-12 h-12" />
+                    ) : (
+                      <span className="text-xs text-gray-600">Unknown</span>
+                    )}
+                  </>
+                ) : null}
               </div>
 
               {/* 📖 Title & Chapter */}
@@ -116,30 +143,32 @@ const Material = () => {
               </h3>
               <p className="text-gray-600 text-sm">{material.chapter}</p>
 
-              {/* ⚡ Action Buttons */}
+              {/* ⚡ Action Buttons with Effects */}
               <div className="flex space-x-4 mt-4">
                 <button
-                  className="text-blue-500 hover:text-blue-700 transition-transform hover:scale-110"
+                  className="text-blue-500 hover:text-white bg-transparent hover:bg-blue-500 border border-blue-500 px-2 py-1 rounded-md transition-all duration-300 ease-in-out"
                   title="Download"
                   onClick={() => handleDownload(material.material_file)}
                 >
-                  <FiDownload size={22} />
+                  <FiDownload size={20} />
                 </button>
 
-                {(userSession?.role === 1 || userSession?.role === 2 || userSession?.role === 3) && (
-                  <button
-                    className="text-red-500 hover:text-red-700 transition-transform hover:scale-110"
-                    title="Delete"
-                    onClick={() => handleDelete(material.material_id)}
-                  >
-                    <FiTrash2 size={22} />
-                  </button>
-                )}
+                {(userSession?.role === 1 ||
+                  userSession?.role === 2 ||
+                  userSession?.role === 3) && (
+                    <button
+                      className="text-red-500 hover:text-white bg-transparent hover:bg-red-500 border border-red-500 px-2 py-1 rounded-md transition-all duration-300 ease-in-out"
+                      title="Delete"
+                      onClick={() => handleDelete(material.material_id)}
+                    >
+                      <FiTrash2 size={20} />
+                    </button>
+                  )}
               </div>
             </div>
           ))
         ) : (
-          <p>No materials found. Raw data: {JSON.stringify(data)}</p> // ✅ Debug fallback
+          <p>No materials found.</p>
         )}
       </div>
     </div>

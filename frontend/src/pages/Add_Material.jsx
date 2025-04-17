@@ -5,9 +5,38 @@ import Button from "../components/Button";
 import Form_Title from "../components/Form_Title";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const Add_Student = () => {
   const navigate = useNavigate();
+  const [subjects, setSubjects] = useState([]);
+  const [classes, setClasses] = useState([]);
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      try {
+        const response = await axios.get("http://localhost:8081/subject");
+        setSubjects(response.data);
+      } catch (error) {
+        console.error("Failed to fetch subjects:", error);
+      }
+    };
+
+    fetchSubjects();
+  }, []);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const response = await axios.get("http://localhost:8081/class");
+        setClasses(response.data);
+      } catch (error) {
+        console.error("Failed to fetch class:", error);
+      }
+    };
+
+    fetchClasses();
+  }, []);
 
   // ✅ Updated validation schema
   const validationSchema = Yup.object({
@@ -113,9 +142,9 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               >
                 <option value="">Choose...</option>
-                {[...Array(10)].map((_, i) => (
-                  <option key={i} value={i + 1}>
-                    {i + 1}
+                {classes.map((cls) => (
+                  <option key={cls.class_id} value={cls.class_name}>
+                    {cls.class_name}
                   </option>
                 ))}
               </select>
@@ -135,9 +164,9 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               >
                 <option value="">Choose...</option>
-                {["Maths", "English", "Hindi", "Gujarati"].map((subject) => (
-                  <option key={subject} value={subject}>
-                    {subject}
+                {subjects.map((subj) => (
+                  <option key={subj.subject_id} value={subj.subject_name}>
+                    {subj.subject_name}
                   </option>
                 ))}
               </select>

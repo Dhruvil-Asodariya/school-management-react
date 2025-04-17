@@ -44,8 +44,8 @@ db.connect((err) => {
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "#", // Replace with your email
-        pass: "#", // Use App Password if 2FA is enabled
+        user: "asodariyadhruvil80@gmail.com", // Replace with your email
+        pass: "isrp beru suck cryk", // Use App Password if 2FA is enabled
     },
 });
 
@@ -195,11 +195,11 @@ app.post("/forgot_password", async (req, res) => {
         const mailOptions = {
             from: '"Easy Way Team" <support@easyway.com>',
             to: email,
-            subject: "🔐 Password Reset OTP - Edusphere",
+            subject: "🔐 Password Reset OTP - Easy Way",
             html: `
                 <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
                     <h1 style="font-size: 26px; margin-bottom: 10px; color: #f1c40f;">🔐 Password Reset Request</h1>
-                    <p style="font-size: 16px; color: #ccc;">We received a request to reset your password for <strong>Edusphere</strong>.</p>
+                    <p style="font-size: 16px; color: #ccc;">We received a request to reset your password for <strong>Easy Way</strong>.</p>
                     <div style="margin: 30px 0; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;">
                         <p style="font-size: 18px; margin-bottom: 10px; color: #f1c40f;">Your One-Time Password (OTP) is:</p>
                         <p style="font-size: 32px; font-weight: bold; color: #fff;">${otp}</p>
@@ -207,8 +207,8 @@ app.post("/forgot_password", async (req, res) => {
                     </div>
                     <p style="font-size: 14px; color: #eee;">If you didn’t request this, you can safely ignore this email.</p>
                     <div style="margin-top: 30px; font-size: 14px; color: #ccc;">
-                        <p>Need help? Contact us at <a href="mailto:support@edusphere.com" style="color: #f1c40f;">support@edusphere.com</a></p>
-                        <p>— The Edusphere Team</p>
+                        <p>Need help? Contact us at <a href="mailto:support@easyway.com" style="color: #f1c40f;">support@easyway.com</a></p>
+                        <p>— The Easy Way Team</p>
                     </div>
                 </div>
             `,
@@ -558,6 +558,7 @@ app.get('/student', (req, res) => {
 // Add New Student
 
 const upload = multer({ storage: storage });
+
 app.post("/student", upload.single("image"), async (req, res) => {
     try {
         console.log("Body Data:", req.body);
@@ -575,120 +576,129 @@ app.post("/student", upload.single("image"), async (req, res) => {
         const role = "4";
         const fullName = `${firstName} ${lastName}`;
 
-        const checkEmailSQL = "SELECT COUNT(*) AS count FROM user_detail WHERE user_name = ?";
-        db.query(checkEmailSQL, [userName], (err, result) => {
-            if (err)
-                return res
-                    .status(500)
-                    .json({ error: "Database error while checking email" });
+        // 🔎 Fetch fee details based on class
+        const feeSQL = "SELECT year_fee, exam_fee FROM fee_structure WHERE id = ?";
+        db.query(feeSQL, [studentClass], (err, feeResult) => {
+            if (err) return res.status(500).json({ error: "Database error while fetching fee details" });
+            if (feeResult.length === 0) return res.status(404).json({ error: "No fee structure found for this class" });
 
-            if (result[0].count > 0) {
-                return res.status(400).json({
-                    message: "Email already exists. Please use a different email.",
-                });
-            }
+            const tuition_fee = feeResult[0].year_fee;
+            const exam_fee = parseInt(feeResult[0].exam_fee.toString().replace(/,/g, ""), 10); // Remove commas
 
+            // 🔍 Check if email (username) already exists
+            const checkEmailSQL = "SELECT COUNT(*) AS count FROM user_detail WHERE user_name = ?";
+            db.query(checkEmailSQL, [userName], (err, result) => {
+                if (err) return res.status(500).json({ error: "Database error while checking email" });
 
-            // Insert user into user_detail
-            const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
-            const user_values = [userName, hash_password, role];
-
-            db.query(user_sql, user_values, (err, userResult) => {
-                if (err) {
-                    return res.status(500).json({ error: err.message });
+                if (result[0].count > 0) {
+                    return res.status(400).json({
+                        message: "Email already exists. Please use a different email.",
+                    });
                 }
 
-                const user_id = userResult.insertId; // ✅ Fetching user_id correctly
-                console.log("✅ New user ID:", user_id);
+                // ✅ Insert into user_detail
+                const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
+                const user_values = [userName, hash_password, role];
 
-                // Insert student into student_detail
-                const student_sql = `INSERT INTO student_detail 
-                (user_id, first_name, last_name, email, phone_no, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                db.query(user_sql, user_values, (err, userResult) => {
+                    if (err) return res.status(500).json({ error: err.message });
 
-                const student_values = [
-                    user_id, firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image
-                ];
+                    const user_id = userResult.insertId;
 
-                db.query(student_sql, student_values, (err, studentResult) => {
-                    if (err) {
-                        console.error("❌ Error inserting student:", err);
-                        return res.status(500).json({ message: "Database error", error: err.message });
-                    }
+                    // ✅ Insert into student_detail
+                    const student_sql = `INSERT INTO student_detail 
+                    (user_id, first_name, last_name, email, phone_no, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-                    // ✅ Send email only after the student record is inserted
-                    const mailOptions = {
-                        from: '"Easy Way Team" <support@easyway.com>',
-                        to: email,
-                        subject: "Account Registered Successfully 🎉",
-                        html: `
-                    <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
-                        
-                        <!-- Header -->
-                        <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Edusphere</span>!</h1>
-                        <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, we’re thrilled to have you with us!</p>
-            
-                        <!-- Content Box -->
-                        <div style="background: rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 10px; backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2); margin-top: 20px;">
-                            <h3 style="color: #f1c40f;">🔑 Your Login Credentials</h3>
-                            <p><strong>👤 Username:</strong> <span style="color: #f1c40f;">${userName}</span></p>
-                            <p><strong>🔐 Password:</strong> <span style="color: #e74c3c;">${password}</span></p>
-                            <p style="font-size: 14px; color: #e74c3c;"><strong>⚠ Keep your credentials safe and do not share them.</strong></p>
-                            
-                            <!-- Login Button -->
-                            <div style="margin-top: 20px;">
-                                <a href="http://localhost:5173/" target="_blank"
-                                   style="background: #3498db; color: #fff; padding: 12px 24px; font-size: 18px; font-weight: bold; border-radius: 5px; text-decoration: none; display: inline-block; box-shadow: 0 2px 5px rgba(255, 255, 255, 0.3);">
-                                    🔓 Login to Your Account
-                                </a>
-                            </div>
-                        </div>
-            
-                        <!-- Learning Journey Section -->
-                        <div style="margin-top: 20px; text-align: center;">
-                            <h2 style="color: #f1c40f;">📖 Your Learning Journey Begins!</h2>
-                            <p style="font-size: 16px; color: #ddd;">
-                                At <strong style="color: #f39c12;">Edusphere</strong>, we empower students with knowledge and innovation.
-                            </p>
-                            <p style="font-style: italic; font-size: 14px; color: #bbb;">
-                                "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Edusphere
-                            </p>
-                        </div>
-            
-                        <!-- Footer -->
-                        <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
-                            <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
-                            <p style="font-size: 16px;">🎓 The Edusphere Team</p>
-                            <p style="font-size: 14px;">📧 support@edusphere.com | 🌐 <a href="https://www.edusphere.com" style="color: #f1c40f; text-decoration: underline;">www.edusphere.com</a></p>
-                        </div>
-                    </div>
-                `,
+                    const student_values = [
+                        user_id, firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image
+                    ];
 
-                    };
-
-                    transporter.sendMail(mailOptions, (error, info) => {
-                        if (error) {
-                            console.error("❌ Error sending email:", error);
-                            return res.status(500).json({ error: "Email sending failed" });
+                    db.query(student_sql, student_values, (err, studentResult) => {
+                        if (err) {
+                            console.error("❌ Error inserting student:", err);
+                            return res.status(500).json({ message: "Database error", error: err.message });
                         }
-                        console.log("📧 Email sent:", info.response);
 
-                        // ✅ Finally, send success response after DB insertion & email
-                        res.status(201).json({
-                            message: "Student and user added successfully",
-                            user_id: user_id,
-                            student_id: studentResult.insertId
+                        // ✅ Insert into fee_detail
+                        const feeInsertSQL = `INSERT INTO fee_detail 
+                        (student_name, email, phone_no, class, tuition_fee, exam_fee, status) 
+                        VALUES (?, ?, ?, ?, ?, ?, 0)`;
+
+                        const fee_values = [fullName, email, phoneNo, studentClass, tuition_fee, exam_fee];
+
+                        db.query(feeInsertSQL, fee_values, (err, feeResult) => {
+                            if (err) {
+                                console.error("❌ Error inserting fee detail:", err);
+                                return res.status(500).json({ message: "Fee insertion failed", error: err.message });
+                            }
+
+                            // ✅ Send welcome email with credentials
+                            const mailOptions = {
+                                from: '"Easy Way Team" <support@easyway.com>',
+                                to: email,
+                                subject: "Account Registered Successfully 🎉",
+                                html: `
+                                <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
+                                    <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Easy way</span>!</h1>
+                                    <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, we’re thrilled to have you with us!</p>
+
+                                    <div style="background: rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 10px; backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2); margin-top: 20px;">
+                                        <h3 style="color: #f1c40f;">🔑 Your Login Credentials</h3>
+                                        <p><strong>👤 Username:</strong> <span style="color: #f1c40f;">${userName}</span></p>
+                                        <p><strong>🔐 Password:</strong> <span style="color: #e74c3c;">${password}</span></p>
+                                        <p style="font-size: 14px; color: #e74c3c;"><strong>⚠ Keep your credentials safe and do not share them.</strong></p>
+                                        <div style="margin-top: 20px;">
+                                            <a href="http://localhost:5173/" target="_blank"
+                                               style="background: #3498db; color: #fff; padding: 12px 24px; font-size: 18px; font-weight: bold; border-radius: 5px; text-decoration: none; display: inline-block; box-shadow: 0 2px 5px rgba(255, 255, 255, 0.3);">
+                                                🔓 Login to Your Account
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-top: 20px; text-align: center;">
+                                        <h2 style="color: #f1c40f;">📖 Your Learning Journey Begins!</h2>
+                                        <p style="font-size: 16px; color: #ddd;">
+                                            At <strong style="color: #f39c12;">Easy way</strong>, we empower students with knowledge and innovation.
+                                        </p>
+                                        <p style="font-style: italic; font-size: 14px; color: #bbb;">
+                                            "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Easy way
+                                        </p>
+                                    </div>
+
+                                    <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
+                                        <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
+                                        <p style="font-size: 16px;">🎓 The Easy Way Team</p>
+                                        <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.easyway.com</a></p>
+                                    </div>
+                                </div>
+                                `
+                            };
+
+                            transporter.sendMail(mailOptions, (error, info) => {
+                                if (error) {
+                                    console.error("❌ Error sending email:", error);
+                                    return res.status(500).json({ error: "Email sending failed" });
+                                }
+
+                                console.log("📧 Email sent:", info.response);
+                                res.status(201).json({
+                                    message: "Student, user, and fee details added successfully",
+                                    user_id: user_id,
+                                    student_id: studentResult.insertId
+                                });
+                            });
                         });
                     });
                 });
             });
         });
-
     } catch (error) {
         console.error("❌ Server Error:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
+
 
 // Update Student 
 const formatDate = (isoDate) => {
@@ -1019,7 +1029,7 @@ app.post("/principal", principal_upload.single("image"), async (req, res) => {
                     <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
                         
                         <!-- Header -->
-                        <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Edusphere</span>!</h1>
+                        <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Easy way</span>!</h1>
                         <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, we’re thrilled to have you with us!</p>
             
                         <!-- Content Box -->
@@ -1042,18 +1052,18 @@ app.post("/principal", principal_upload.single("image"), async (req, res) => {
                         <div style="margin-top: 20px; text-align: center;">
                             <h2 style="color: #f1c40f;">📖 Your Learning Journey Begins!</h2>
                             <p style="font-size: 16px; color: #ddd;">
-                                At <strong style="color: #f39c12;">Edusphere</strong>, we empower students with knowledge and innovation.
+                                At <strong style="color: #f39c12;">Easy way</strong>, we empower students with knowledge and innovation.
                             </p>
                             <p style="font-style: italic; font-size: 14px; color: #bbb;">
-                                "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Edusphere
+                                "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Easy way
                             </p>
                         </div>
             
                         <!-- Footer -->
                         <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
                             <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
-                            <p style="font-size: 16px;">🎓 The Edusphere Team</p>
-                            <p style="font-size: 14px;">📧 support@edusphere.com | 🌐 <a href="https://www.edusphere.com" style="color: #f1c40f; text-decoration: underline;">www.edusphere.com</a></p>
+                            <p style="font-size: 16px;">🎓 The Easy way Team</p>
+                            <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.easyway.com</a></p>
                         </div>
                     </div>
                 `,
@@ -1180,25 +1190,40 @@ app.get('/leave', (req, res) => {
         });
     }
 
-    const role = req.session.user.role;
+    const { email, role } = req.session.user;
+    console.log("✅ User email from session:", email);
 
     let sql;
+    let params = [];
 
-    if (role == 3) {
-        sql = "SELECT * FROM leave_detail WHERE role = 'Student'";
+    if (role === 1) {
+        // Admin sees all pending leave requests
+        sql = "SELECT * FROM leave_detail WHERE status = 0";
+    } else if (role === 3) {
+        // Parent sees only pending Student leaves
+        sql = "SELECT * FROM leave_detail WHERE role = 'Student' AND status = 0";
+    } else if (role === 2) {
+        // Faculty sees only pending Faculty leaves
+        sql = "SELECT * FROM leave_detail WHERE role = 'Faculty' AND status = 0";
+    } else if (role === 4) {
+        // Student sees their own leaves (email LIKE match)
+        sql = "SELECT * FROM leave_detail WHERE email LIKE ?";
+        params = [`%${email}%`];
     } else {
-        sql = "SELECT * FROM leave_detail WHERE role = 'Faculty'";
+        return res.status(403).json({ message: "Access forbidden: Unknown role" });
     }
 
-    db.query(sql, (err, result) => {
+    db.query(sql, params, (err, result) => {
         if (err) {
-            console.error("SQL Error:", err);
+            console.error("❌ SQL Error:", err);
             return res.status(500).json({ message: "Error inside server", error: err });
         }
 
         return res.json(result);
     });
 });
+
+
 
 // Add Leave
 app.post('/leave', (req, res) => {
@@ -1238,10 +1263,10 @@ app.post('/leave', (req, res) => {
         const today = new Date();
         const current_date = today.toISOString().split("T")[0];
 
-        const Sql = `INSERT INTO leave_detail (full_name, email, leave_reason, leave_day, applyed_on, role) 
-                   VALUES (?, ?, ?, ?, ?, ?)`;
+        const Sql = `INSERT INTO leave_detail (full_name, email, leave_reason, leave_day, from_date, to_date, applyed_on, role) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        db.query(Sql, [fullName, email, leaveReason, diffInDays, current_date, role_name], (err, result) => {
+        db.query(Sql, [fullName, email, leaveReason, diffInDays, fromDate, toDate, current_date, role_name], (err, result) => {
             if (err) {
                 console.error("SQL Error:", err);
                 return res.status(500).json({ message: "Database insertion error", error: err });
@@ -1254,7 +1279,7 @@ app.post('/leave', (req, res) => {
 //Update Status on Leave
 app.patch("/leave/:id", (req, res) => {
     const { id } = req.params;
-    const { status, email, fullName } = req.body; // Get email & name from frontend
+    const { status, email, fullName, reason, fromDate, toDate } = req.body; // Get email & name from frontend
 
     if (typeof status !== "number") {
         return res.status(400).json({ error: "Invalid status value" });
@@ -1270,10 +1295,50 @@ app.patch("/leave/:id", (req, res) => {
         // ✅ If status is Active (1), send an email
         if (status === 1) {
             const mailOptions = {
-                from: '"Easy Way School" <Your-Email@gmail.com>',
+                from: '"Easy Way School" <easyway@gmail.com>',
                 to: email,
                 subject: "Leave Request Approved ✅",
-                text: `Hello ${fullName},\n\nYour leave request has been approved!\n\nThank you.`,
+                html: `<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
+    
+    <!-- Header -->
+    <h1 style="margin-bottom: 10px; font-size: 28px;">✅ Leave Request <span style="color: #2ecc71;">Approved</span>!</h1>
+    <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, your leave request has been successfully approved.</p>
+
+    <!-- Leave Details Box -->
+    <div style="background: rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 10px; backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2); margin-top: 20px;">
+        <h3 style="color: #f1c40f;">📅 Leave Summary</h3>
+        <p><strong>🧾 Reason:</strong> <span style="color: #ecf0f1;">${reason}</span></p>
+        <p><strong>📆 From:</strong> <span style="color: #f1c40f;">${fromDate}</span></p>
+        <p><strong>📆 To:</strong> <span style="color: #f1c40f;">${toDate}</span></p>
+        <p style="font-size: 14px; color: #2ecc71;"><strong>✔ Enjoy your time off! Make sure to return rejuvenated.</strong></p>
+
+        <!-- Dashboard Button -->
+        <div style="margin-top: 20px;">
+            <a href="http://localhost:5173/" target="_blank"
+               style="background: #3498db; color: #fff; padding: 12px 24px; font-size: 18px; font-weight: bold; border-radius: 5px; text-decoration: none; display: inline-block; box-shadow: 0 2px 5px rgba(255, 255, 255, 0.3);">
+                🔗 Go to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Encouragement Section -->
+    <div style="margin-top: 20px; text-align: center;">
+        <h2 style="color: #f1c40f;">🧘‍♀️ Recharge & Refresh!</h2>
+        <p style="font-size: 16px; color: #ddd;">
+            Taking time off is essential. We're glad you're taking care of yourself.
+        </p>
+        <p style="font-style: italic; font-size: 14px; color: #bbb;">
+            "Almost everything will work again if you unplug it for a few minutes… including you." – Anne Lamott
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
+        <p style="font-size: 18px;"><strong>Take Care,</strong></p>
+        <p style="font-size: 16px;">🧑‍💼 HR Department – Easy Way</p>
+        <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.easyway.com</a></p>
+    </div>
+</div>`,
             };
 
             transporter.sendMail(mailOptions, (error, info) => {
@@ -1499,7 +1564,47 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
                         from: '"Easy Way School" <Your-Email@gmail.com>',
                         to: email,
                         subject: "Account Registered Successfully 🎉",
-                        text: `Hello ${fullName},\n\nYour account has been successfully registered.\n\nHere are your login credentials:\nUsername: ${userName}\nPassword: ${password}\n\nPlease keep this information safe and do not share it with anyone.\n\nThank you!`,
+                        html: `<div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
+                        
+                        <!-- Header -->
+                        <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Easy Way</span>!</h1>
+                        <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, we’re thrilled to have you with us!</p>
+            
+                        <!-- Content Box -->
+                        <div style="background: rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 10px; backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2); margin-top: 20px;">
+                            <h3 style="color: #f1c40f;">🔑 Your Login Credentials</h3>
+                            <p><strong>👤 Username:</strong> <span style="color: #f1c40f;">${userName}</span></p>
+                            <p><strong>🔐 Password:</strong> <span style="color: #e74c3c;">${password}</span></p>
+                            <p style="font-size: 14px; color: #e74c3c;"><strong>⚠ Keep your credentials safe and do not share them.</strong></p>
+                            
+                            <!-- Login Button -->
+                            <div style="margin-top: 20px;">
+                                <a href="http://localhost:5173/" target="_blank"
+                                   style="background: #3498db; color: #fff; padding: 12px 24px; font-size: 18px; font-weight: bold; border-radius: 5px; text-decoration: none; display: inline-block; box-shadow: 0 2px 5px rgba(255, 255, 255, 0.3);">
+                                    🔓 Login to Your Account
+                                </a>
+                            </div>
+                        </div>
+            
+                        <!-- Learning Journey Section -->
+                        <div style="margin-top: 20px; text-align: center;">
+                            <h2 style="color: #f1c40f;">📖 Your Learning Journey Begins!</h2>
+                            <p style="font-size: 16px; color: #ddd;">
+                                At <strong style="color: #f39c12;">Easy Way</strong>, we empower students with knowledge and innovation.
+                            </p>
+                            <p style="font-style: italic; font-size: 14px; color: #bbb;">
+                                "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Easy Way
+                            </p>
+                        </div>
+            
+                        <!-- Footer -->
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
+                            <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
+                            <p style="font-size: 16px;">🎓 The Easy Way Team</p>
+                            <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.easyway.com</a></p>
+                        </div>
+                    </div>
+                `,
                     };
 
                     transporter.sendMail(mailOptions, (error, info) => {

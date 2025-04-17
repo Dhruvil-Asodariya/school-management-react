@@ -1367,6 +1367,16 @@ const MasterPage = ({ children }) => {
 
               {/* Add Leave */}
               <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
+                <CgNotes className="w-5 h-5" />
+                {sidebarOpen && (
+                  <Link to="/leave_manage" className="ml-4">
+                    Leave Manage
+                  </Link>
+                )}
+              </li>
+
+              {/* Add Leave */}
+              <li className="flex items-center py-4 px-4 hover:font-bold hover:scale-106">
                 <FaOutdent className="w-5 h-5" />
                 {sidebarOpen && (
                   <Link to="/add_leave" className="ml-4">

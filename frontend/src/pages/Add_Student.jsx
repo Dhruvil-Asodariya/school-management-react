@@ -307,7 +307,6 @@ const Add_Student = () => {
             <input
               type="file"
               name="image"
-              accept="image/png, image/jpg, image/jpeg" // ✅ Restrict file picker
               className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               onChange={(event) =>
                 formik.setFieldValue("image", event.currentTarget.files[0])

@@ -155,7 +155,7 @@ const StudentManage = () => {
   );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-6 bg-gray-100">
       <Reg_Title name="All Students List" />
 
       <div className="mb-6 flex justify-between items-center">
