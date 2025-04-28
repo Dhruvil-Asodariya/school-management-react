@@ -65,7 +65,6 @@ const Dashboard = () => {
           <Dashboard_Card name="Principal" total={totals.principal} link="/principal_manage" />
           <Dashboard_Card name="Class" total={totals.classes} link="/class_manage" />
           <Dashboard_Card name="Subjects" total={totals.subjects} link="/subject_manage" />
-          <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/fees_manage" />
         </>
       ) : userSession.role === 4 ? (
         <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/pending_fees_manage" />
@@ -77,7 +76,6 @@ const Dashboard = () => {
           <Dashboard_Card name="Faculty" total={totals.faculty} link="/faculty_manage" />
           <Dashboard_Card name="Class" total={totals.classes} link="/class_manage" />
           <Dashboard_Card name="Subjects" total={totals.subjects} link="/subject_manage" />
-          <Dashboard_Card name="Pending Fee" total={totals.pending_fees} link="/fees_manage" />
         </>
       ) : userSession.role === 3 ? (
         <>

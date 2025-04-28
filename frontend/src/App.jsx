@@ -25,6 +25,7 @@ import Leave_Manage from "./pages/Leave_Manage";
 import Add_Leave from "./pages/Add_Leave";
 import Logout from "./pages/Logout";
 import Fees_Manage from "./pages/Fees_Manage";
+import Fee_Amount from "./pages/Fee_Amount";
 import Pending_Fees_Manage from "./pages/Pending_Fees_Manage";
 import Add_Parent_Data from "./pages/add_parent_data"
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -67,6 +68,7 @@ const App = () => {
         <Route path="/add_leave" element={ <ProtectedRoute element={<MasterPage><Add_Leave /></MasterPage>} allowedRoles={[1, 2, 3, 4]} userRole={userRole} /> }/>
         <Route path="/leave_manage" element={ <ProtectedRoute element={<MasterPage><Leave_Manage /></MasterPage>} allowedRoles={[1, 2, 3, 4]} userRole={userRole} /> }/>
         <Route path="/fees_manage" element={ <ProtectedRoute element={<MasterPage><Fees_Manage /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
+        <Route path="/fees_amount" element={ <ProtectedRoute element={<MasterPage><Fee_Amount /></MasterPage>} allowedRoles={[1, 2]} userRole={userRole} /> }/>
         <Route path="/pending_fees_manage" element={ <ProtectedRoute element={<MasterPage><Pending_Fees_Manage /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
         <Route path="/add_parent_data" element={ <ProtectedRoute element={<MasterPage><Add_Parent_Data /></MasterPage>} allowedRoles={[1, 2, 3, 4, 5]} userRole={userRole} /> }/>
         {/* Catch-All Route for 404 Page */}

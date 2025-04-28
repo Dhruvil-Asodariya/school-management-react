@@ -44,8 +44,8 @@ db.connect((err) => {
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-        user: "#", // Replace with your email
-        pass: "#", // Use App Password if 2FA is enabled
+        user: "YOUR-EMAIL", // Replace with your email
+        pass: "YOUR-PASS-KEY", // Use App Password if 2FA is enabled
     },
 });
 
@@ -86,8 +86,8 @@ const profile_picture_storage = multer.diskStorage({
 
 // ✅ Setup Razorpay Instance
 const razorpay = new Razorpay({
-    key_id: "YOUR_RAZORPAY_KEY", // Replace with your API key
-    key_secret: "SM_SYSTEM_RAZORPAY" // Replace with your secret key
+    key_id: "KEY-ID", // Replace with your API key
+    key_secret: "KEY-SECRET" // Replace with your secret key
 });
 
 
@@ -509,7 +509,18 @@ app.post("/class", (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        res.status(201).json({ message: "Class added successfully", id: result.insertId });
+
+        // Get the class ID of the newly inserted class
+        const classId = result.insertId;
+
+        // Insert fee amount with class_id reference
+        const addFeeAmount = "INSERT INTO fee_amout (year_fee, exam_fee) VALUES (0, 0)";
+        db.query(addFeeAmount, (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.status(201).json({ message: "Class added successfully", classId: result.insertId });
+        });
     });
 });
 
@@ -558,14 +569,15 @@ app.get('/student', (req, res) => {
 // Add New Student
 
 const upload = multer({ storage: storage });
-
 app.post("/student", upload.single("image"), async (req, res) => {
     try {
         console.log("Body Data:", req.body);
         console.log("File Data:", req.file);
 
+        // Destructure required fields from request body
         const { firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, class: studentClass } = req.body;
         const image = req.file ? req.file.filename : null;
+
         if (!image) return res.status(400).json({ message: "Image upload failed" });
 
         const admission_date = new Date().toISOString().slice(0, 10);
@@ -573,105 +585,126 @@ app.post("/student", upload.single("image"), async (req, res) => {
         const password = Math.floor(100000 + Math.random() * 900000).toString();
         const salt = await bcrypt.genSalt(10);
         const hash_password = await bcrypt.hash(password, salt);
-        const role = "4";
+        const role = "4"; // Assuming role 4 is for students
         const fullName = `${firstName} ${lastName}`;
 
-        // 🔎 Fetch fee details based on class
-        const feeSQL = "SELECT year_fee, exam_fee FROM fee_structure WHERE id = ?";
-        db.query(feeSQL, [studentClass], (err, feeResult) => {
-            if (err) return res.status(500).json({ error: "Database error while fetching fee details" });
-            if (feeResult.length === 0) return res.status(404).json({ error: "No fee structure found for this class" });
+        // Check if user already exists
+        const checkEmailSQL = "SELECT COUNT(*) AS count FROM user_detail WHERE user_name = ?";
+        db.query(checkEmailSQL, [userName], (err, result) => {
+            if (err) {
+                console.error("❌ Database error while checking email:", err);
+                return res.status(500).json({ error: "Database error while checking email" });
+            }
 
-            const tuition_fee = feeResult[0].year_fee;
-            const exam_fee = parseInt(feeResult[0].exam_fee.toString().replace(/,/g, ""), 10); // Remove commas
+            if (result[0].count > 0) {
+                return res.status(400).json({
+                    message: "Email already exists. Please use a different email.",
+                });
+            }
 
-            // 🔍 Check if email (username) already exists
-            const checkEmailSQL = "SELECT COUNT(*) AS count FROM user_detail WHERE user_name = ?";
-            db.query(checkEmailSQL, [userName], (err, result) => {
-                if (err) return res.status(500).json({ error: "Database error while checking email" });
-
-                if (result[0].count > 0) {
-                    return res.status(400).json({
-                        message: "Email already exists. Please use a different email.",
-                    });
+            // Insert into user_detail table
+            const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
+            const user_values = [userName, hash_password, role];
+            db.query(user_sql, user_values, (err, userResult) => {
+                if (err) {
+                    console.error("❌ Error inserting user:", err);
+                    return res.status(500).json({ error: err.message });
                 }
 
-                // ✅ Insert into user_detail
-                const user_sql = "INSERT INTO user_detail (user_name, password, role) VALUES (?, ?, ?)";
-                const user_values = [userName, hash_password, role];
+                const user_id = userResult.insertId;
+                console.log("✅ New user ID:", user_id);
 
-                db.query(user_sql, user_values, (err, userResult) => {
-                    if (err) return res.status(500).json({ error: err.message });
+                // Insert into student_detail table
+                const student_sql = `INSERT INTO student_detail 
+                (user_id, first_name, last_name, email, phone_no, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-                    const user_id = userResult.insertId;
+                const student_values = [
+                    user_id, firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image
+                ];
 
-                    // ✅ Insert into student_detail
-                    const student_sql = `INSERT INTO student_detail 
-                    (user_id, first_name, last_name, email, phone_no, emrNumber, date_of_birth, address, gender, class_id, admission_date, image) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                db.query(student_sql, student_values, (err, studentResult) => {
+                    if (err) {
+                        console.error("❌ Error inserting student:", err);
+                        return res.status(500).json({ message: "Database error", error: err.message });
+                    }
 
-                    const student_values = [
-                        user_id, firstName, lastName, email, phoneNo, ephoneNo, dob, address, gender, studentClass, admission_date, image
-                    ];
+                    const student_id = studentResult.insertId;
+                    console.log("✅ New student ID:", student_id);
 
-                    db.query(student_sql, student_values, (err, studentResult) => {
+                    // Fetch fee amount for the class from the fee_amount table
+                    const feeAmountSQL = "SELECT * FROM fee_amout WHERE id = ?";
+                    db.query(feeAmountSQL, [studentClass], (err, feeResult) => {
                         if (err) {
-                            console.error("❌ Error inserting student:", err);
-                            return res.status(500).json({ message: "Database error", error: err.message });
+                            console.error("❌ Error fetching fee amount:", err);
+                            return res.status(500).json({ message: "Database error fetching fee amount", error: err.message });
                         }
 
-                        // ✅ Insert into fee_detail
-                        const feeInsertSQL = `INSERT INTO fee_detail 
-                        (student_name, email, phone_no, class, tuition_fee, exam_fee, status) 
-                        VALUES (?, ?, ?, ?, ?, ?, 0)`;
+                        if (feeResult.length === 0) {
+                            console.error("❌ No fee amount found for class_id:", studentClass);
+                            return res.status(404).json({ message: "Fee amount not set for this class" });
+                        }
 
-                        const fee_values = [fullName, email, phoneNo, studentClass, tuition_fee, exam_fee];
+                        const yearFee = feeResult[0].year_fee;
+                        const examFee = feeResult[0].exam_fee;
 
-                        db.query(feeInsertSQL, fee_values, (err, feeResult) => {
+                        // Insert into fee_detail table
+                        const fee_sql = `INSERT INTO fees_detail (student_name, email, phone_no, class, tuition_fee, exam_fee) VALUES (?, ?, ?, ?, ?, ?)`;
+
+                        const fee_values = [
+                            fullName,
+                            email,
+                            phoneNo,
+                            studentClass,
+                            yearFee,
+                            examFee
+                        ];
+
+                        console.log("�� Fee details added:", fee_values);
+                        db.query(fee_sql, fee_values, (err, feeInsertResult) => {
                             if (err) {
-                                console.error("❌ Error inserting fee detail:", err);
-                                return res.status(500).json({ message: "Fee insertion failed", error: err.message });
+                                console.error("❌ Error inserting fee details:", err);
+                                return res.status(500).json({ message: "Database error while inserting fee", error: err.message });
                             }
 
-                            // ✅ Send welcome email with credentials
+                            console.log("✅ Fee details added:", feeInsertResult.insertId);
+
+                            // Send email to user with login credentials
                             const mailOptions = {
                                 from: '"Easy Way Team" <support@easyway.com>',
                                 to: email,
                                 subject: "Account Registered Successfully 🎉",
                                 html: `
-                                <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
-                                    <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Easy way</span>!</h1>
-                                    <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, we’re thrilled to have you with us!</p>
-
-                                    <div style="background: rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 10px; backdrop-filter: blur(10px); box-shadow: 0 4px 8px rgba(255, 255, 255, 0.2); margin-top: 20px;">
-                                        <h3 style="color: #f1c40f;">🔑 Your Login Credentials</h3>
-                                        <p><strong>👤 Username:</strong> <span style="color: #f1c40f;">${userName}</span></p>
-                                        <p><strong>🔐 Password:</strong> <span style="color: #e74c3c;">${password}</span></p>
-                                        <p style="font-size: 14px; color: #e74c3c;"><strong>⚠ Keep your credentials safe and do not share them.</strong></p>
-                                        <div style="margin-top: 20px;">
-                                            <a href="http://localhost:5173/" target="_blank"
-                                               style="background: #3498db; color: #fff; padding: 12px 24px; font-size: 18px; font-weight: bold; border-radius: 5px; text-decoration: none; display: inline-block; box-shadow: 0 2px 5px rgba(255, 255, 255, 0.3);">
-                                                🔓 Login to Your Account
-                                            </a>
+                                    <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
+                                        <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Edusphere</span>!</h1>
+                                        <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, we’re thrilled to have you with us!</p>
+                                        <div style="background: rgba(255, 255, 255, 0.15); padding: 25px; border-radius: 10px; margin-top: 20px;">
+                                            <h3 style="color: #f1c40f;">🔑 Your Login Credentials</h3>
+                                            <p><strong>👤 Username:</strong> <span style="color: #f1c40f;">${userName}</span></p>
+                                            <p><strong>🔐 Password:</strong> <span style="color: #e74c3c;">${password}</span></p>
+                                            <p style="font-size: 14px; color: #e74c3c;"><strong>⚠ Keep your credentials safe and do not share them.</strong></p>
+                                            <div style="margin-top: 20px;">
+                                                <a href="http://localhost:5173/" target="_blank"
+                                                   style="background: #3498db; color: #fff; padding: 12px 24px; font-size: 18px; font-weight: bold; border-radius: 5px; text-decoration: none;">
+                                                    🔓 Login to Your Account
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div style="margin-top: 20px; text-align: center;">
+                                            <h2 style="color: #f1c40f;">📖 Your Learning Journey Begins!</h2>
+                                            <p style="font-size: 16px; color: #ddd;">
+                                                At <strong style="color: #f39c12;">Edusphere</strong>, we empower students with knowledge and innovation.
+                                            </p>
+                                            <p style="font-style: italic; font-size: 14px; color: #bbb;">
+                                                "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Edusphere
+                                            </p>
+                                        </div>
+                                        <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
+                                            <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
+                                            <p style="font-size: 16px;">🎓 The Edusphere Team</p>
+                                            <p style="font-size: 14px;">📧 support@edusphere.com | 🌐 <a href="https://www.edusphere.com" style="color: #f1c40f; text-decoration: underline;">www.edusphere.com</a></p>
                                         </div>
                                     </div>
-
-                                    <div style="margin-top: 20px; text-align: center;">
-                                        <h2 style="color: #f1c40f;">📖 Your Learning Journey Begins!</h2>
-                                        <p style="font-size: 16px; color: #ddd;">
-                                            At <strong style="color: #f39c12;">Easy way</strong>, we empower students with knowledge and innovation.
-                                        </p>
-                                        <p style="font-style: italic; font-size: 14px; color: #bbb;">
-                                            "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Easy way
-                                        </p>
-                                    </div>
-
-                                    <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
-                                        <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
-                                        <p style="font-size: 16px;">🎓 The Easy Way Team</p>
-                                        <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.easyway.com</a></p>
-                                    </div>
-                                </div>
                                 `
                             };
 
@@ -680,12 +713,13 @@ app.post("/student", upload.single("image"), async (req, res) => {
                                     console.error("❌ Error sending email:", error);
                                     return res.status(500).json({ error: "Email sending failed" });
                                 }
-
                                 console.log("📧 Email sent:", info.response);
+
+                                // Respond with success
                                 res.status(201).json({
                                     message: "Student, user, and fee details added successfully",
                                     user_id: user_id,
-                                    student_id: studentResult.insertId
+                                    student_id: student_id
                                 });
                             });
                         });
@@ -745,38 +779,54 @@ app.put("/student/:id", (req, res) => {
 app.delete("/student/:id", (req, res) => {
     const { id } = req.params;
 
-    const getImageSql = "SELECT image FROM student_detail WHERE student_id = ?";
-    db.query(getImageSql, [id], (err, result) => {
+    // 1️⃣ Fetch image path and user_id first
+    const getStudentSql = "SELECT image, user_id FROM student_detail WHERE student_id = ?";
+    db.query(getStudentSql, [id], (err, result) => {
         if (err) {
-            console.error("Error fetching student image:", err);
-            return res.status(500).json({ error: "Failed to delete student" });
+            console.error("❌ Error fetching student:", err);
+            return res.status(500).json({ error: "Failed to fetch student details" });
         }
 
         if (result.length === 0) {
             return res.status(404).json({ error: "Student not found" });
         }
 
-        const imagePath = result[0].image; // Assuming "image" is the column storing the file path
+        const { image: imagePath, user_id } = result[0];
 
-
-        const sql = "DELETE FROM student_detail WHERE student_id = ?";
-        db.query(sql, [id], (err, result) => {
+        // 2️⃣ Delete student from student_detail
+        const deleteStudentSql = "DELETE FROM student_detail WHERE student_id = ?";
+        db.query(deleteStudentSql, [id], (err, studentDeleteResult) => {
             if (err) {
-                console.error("Error deleting student:", err);
+                console.error("❌ Error deleting student:", err);
                 return res.status(500).json({ error: "Failed to delete student" });
             }
 
-            // 3️⃣ **Delete the Image File from `public` Folder**
-            if (imagePath) {
-                const fullPath = path.join(__dirname, "../frontend/public", imagePath); // Adjust path
-                fs.unlink(fullPath, (err) => {
-                    if (err && err.code !== "ENOENT") {
-                        console.error("Error deleting profile image:", err);
-                    }
-                });
-            }
+            console.log("✅ Student deleted from student_detail");
 
-            res.json({ message: "Student deleted successfully" });
+            // 3️⃣ Delete user from user_detail
+            const deleteUserSql = "DELETE FROM user_detail WHERE user_id = ?";
+            db.query(deleteUserSql, [user_id], (err, userDeleteResult) => {
+                if (err) {
+                    console.error("❌ Error deleting user:", err);
+                    return res.status(500).json({ error: "Failed to delete user" });
+                }
+
+                console.log("✅ User deleted from user_detail");
+
+                // 4️⃣ Delete the profile image file
+                if (imagePath) {
+                    const fullPath = path.join(__dirname, "../frontend/public", imagePath); // Adjust path if needed
+                    fs.unlink(fullPath, (err) => {
+                        if (err && err.code !== "ENOENT") {
+                            console.error("❌ Error deleting image file:", err);
+                        } else {
+                            console.log("✅ Image file deleted");
+                        }
+                    });
+                }
+
+                res.json({ message: "Student and user deleted successfully" });
+            });
         });
     });
 });
@@ -1029,7 +1079,7 @@ app.post("/principal", principal_upload.single("image"), async (req, res) => {
                     <div style="max-width: 600px; margin: auto; font-family: Arial, sans-serif; padding: 40px; background: linear-gradient(to bottom, #2c3e50, #1c2833); color: #fff; border-radius: 10px; text-align: center;">
                         
                         <!-- Header -->
-                        <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Easy way</span>!</h1>
+                        <h1 style="margin-bottom: 10px; font-size: 28px;">🚀 Welcome to <span style="color: #f39c12;">Edusphere</span>!</h1>
                         <p style="font-size: 16px; color: #ddd;">Hello <strong>${fullName}</strong>, we’re thrilled to have you with us!</p>
             
                         <!-- Content Box -->
@@ -1052,18 +1102,18 @@ app.post("/principal", principal_upload.single("image"), async (req, res) => {
                         <div style="margin-top: 20px; text-align: center;">
                             <h2 style="color: #f1c40f;">📖 Your Learning Journey Begins!</h2>
                             <p style="font-size: 16px; color: #ddd;">
-                                At <strong style="color: #f39c12;">Easy way</strong>, we empower students with knowledge and innovation.
+                                At <strong style="color: #f39c12;">Edusphere</strong>, we empower students with knowledge and innovation.
                             </p>
                             <p style="font-style: italic; font-size: 14px; color: #bbb;">
-                                "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Easy way
+                                "Education is the passport to the future, for tomorrow belongs to those who prepare for it today." – Edusphere
                             </p>
                         </div>
             
                         <!-- Footer -->
                         <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
                             <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
-                            <p style="font-size: 16px;">🎓 The Easy way Team</p>
-                            <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.easyway.com</a></p>
+                            <p style="font-size: 16px;">🎓 The Edusphere Team</p>
+                            <p style="font-size: 14px;">📧 support@edusphere.com | 🌐 <a href="https://www.edusphere.com" style="color: #f1c40f; text-decoration: underline;">www.edusphere.com</a></p>
                         </div>
                     </div>
                 `,
@@ -1601,7 +1651,7 @@ app.post("/faculty", faculty_upload.single("image"), async (req, res) => {
                         <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
                             <p style="font-size: 18px;"><strong>Best Wishes,</strong></p>
                             <p style="font-size: 16px;">🎓 The Easy Way Team</p>
-                            <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.easyway.com</a></p>
+                            <p style="font-size: 14px;">📧 support@easyway.com | 🌐 <a href="https://www.easyway.com" style="color: #f1c40f; text-decoration: underline;">www.edusphere.com</a></p>
                         </div>
                     </div>
                 `,
@@ -1773,7 +1823,7 @@ app.get("/dashboard_totals", (req, res) => {
         const matchEmail = result[0].email;
         let queries = {};
 
-        if (role === 1) { // ✅ Corrected comparison
+        if (role === 1 || role === 2 || role === 3) { // ✅ Corrected comparison
             queries = {
                 students: "SELECT COUNT(*) AS total FROM student_detail",
                 faculty: "SELECT COUNT(*) AS total FROM faculty_detail",
@@ -2089,64 +2139,49 @@ app.delete("/delete_profile_picture", async (req, res) => {
 // Get Fees
 app.get("/fees", (req, res) => {
     if (!req.session.user) {
-        return res.status(401).json({
-            message: "Unauthorized access",
-            session: req.session  // ✅ Debugging: Show session object
-        });
+        return res.status(401).json({ message: "Unauthorized access" });
     }
 
     const email = req.session.user.email;
     const role = req.session.user.role;
-    console.log("✅ User email from session:", email);
 
-    // Use wildcard search for flexible email matching
     const sql = `
-        SELECT email FROM admin_detail WHERE email LIKE ?
-        UNION ALL
-        SELECT email FROM student_detail WHERE email LIKE ?
-        UNION ALL
-        SELECT email FROM faculty_detail WHERE email LIKE ?
-        UNION ALL
-        SELECT email FROM parent_detail WHERE email LIKE ?
+        SELECT email FROM admin_detail WHERE email LIKE ? 
+        UNION ALL 
+        SELECT email FROM student_detail WHERE email LIKE ? 
+        UNION ALL 
+        SELECT email FROM faculty_detail WHERE email LIKE ? 
+        UNION ALL 
+        SELECT email FROM principal_detail WHERE email LIKE ?;
     `;
 
     db.query(sql, [`%${email}%`, `%${email}%`, `%${email}%`, `%${email}%`], (err, result) => {
         if (err) {
-            console.error("❌ Database Error:", err);
-            return res.status(500).json({ message: "Error inside server", error: err.message });
+            return res.status(500).json({ message: "Database error", error: err.message });
         }
 
         if (result.length === 0) {
-            console.log("❌ No matching email found for:", email);
             return res.status(404).json({ message: "No matching email found" });
         }
 
         const matchedEmail = result[0].email;
-        console.log("✅ Matched Email:", matchedEmail);
 
         let feeSql;
-
-        if (role == 1 || role == 2 || role == 3) {
-            feeSql = "SELECT * FROM fees_detail WHERE status = 0";
-        } else {
+        if (role === 1 || role === 2) { // Admin role
+            feeSql = "SELECT * FROM fees_detail";
+        } else { // Other roles
             feeSql = "SELECT * FROM fees_detail WHERE email = ? AND status = 1";
         }
 
-
-        // Fetch Fees for the matched Email
-
         db.query(feeSql, [matchedEmail], (err, feeResult) => {
             if (err) {
-                console.error("❌ Database Error:", err);
                 return res.status(500).json({ message: "Error fetching fees", error: err.message });
             }
 
             if (feeResult.length === 0) {
-                console.log("❌ No fee records found for:", matchedEmail);
                 return res.status(404).json({ message: "No fee records found" });
             }
 
-            console.log("✅ Fee Data Fetched:", feeResult);
             res.json(feeResult);
         });
     });
@@ -2192,7 +2227,7 @@ app.get("/pending_fees", (req, res) => {
 
         let feeSql;
 
-        if (role == 1 || role == 2 || role == 3) {
+        if (role == 3) {
             feeSql = "SELECT * FROM fees_detail WHERE status = 0";
         } else {
             feeSql = "SELECT * FROM fees_detail WHERE email = ? AND status = 0";
@@ -2218,42 +2253,112 @@ app.get("/pending_fees", (req, res) => {
     });
 });
 
-// ✅ Create Order Route
-app.post("/create_order", async (req, res) => {
-    const { amount } = req.body; // Amount in paise (₹1 = 100 paise)
+// Get Fee Amount
+app.get('/fee_amount', (req, res) => {
+    const sql = "SELECT * FROM fee_amout";
+    db.query(sql, (err, result) => {
+        if (err) return res.json({ Message: "Error inside server" });
+        return res.json(result);
+    })
+})
+
+// Update Fee Amount
+app.put("/fee_amount/:id", async (req, res) => {
+    const { year_fee, exam_fee } = req.body;
+    const { id } = req.params;
+
+    if (!year_fee || !exam_fee) {
+        return res.status(400).json({ error: "Both year fee and exam fee are required" });
+    }
 
     try {
+        const sql = "UPDATE fee_amout SET year_fee = ?, exam_fee = ? WHERE id = ?";
+        await db.query(sql, [year_fee, exam_fee, id]);
+
+        res.json({ message: "Fee amount updated successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Failed to update fee amount" });
+    }
+});
+
+// Delete Fee Amount
+app.delete("/fee_amount/:id", (req, res) => {
+    const { id } = req.params;
+
+    const sql = "DELETE FROM fee_amout WHERE id = ?";
+    db.query(sql, [id], (err, result) => {
+        if (err) {
+            console.error("Error deleting fee amount:", err);
+            return res.status(500).json({ error: "Failed to delete fee amount" });
+        }
+        res.json({ message: "Fee amount deleted successfully" });
+    });
+});
+
+// ✅ Create Order Route
+
+const MAX_TRANSACTION_LIMIT = 100000 * 100;  // 100,000 INR = 10,000,000 paise
+
+app.post("/create_order", async (req, res) => {
+    try {
+        const { amount } = req.body;
+
+        if (!amount) {
+            return res.status(400).json({ error: "Amount is required" });
+        }
+
+        // Check if the amount exceeds the limit
+        if (amount > MAX_TRANSACTION_LIMIT) {
+            return res.status(400).send('Transaction amount exceeds the limit of ₹100,000.');
+        }
+
         const options = {
-            amount: amount, // Amount in paise
+            amount: parseInt(amount), // amount in paisa
             currency: "INR",
-            receipt: "order_rcptid_11",
+            receipt: `receipt_order_${Date.now()}`,
+            payment_capture: 1
         };
 
         const order = await razorpay.orders.create(options);
-        res.json({ order_id: order.id, currency: order.currency });
-    } catch (error) {
-        console.error("❌ Razorpay Order Error:", error);
-        res.status(500).json({ message: "Failed to create order" });
+
+        return res.status(200).json({
+            order_id: order.id,
+            currency: order.currency
+        });
+
+    } catch (err) {
+        console.error("❌ Razorpay create_order error:", err);
+        res.status(500).json({ error: "Failed to create Razorpay order" });
     }
 });
 
 app.post("/verify_payment", async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
+    const email = req.session.user.email;
+
     try {
         // ✅ Step 1: Generate Expected Signature
         const body = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto
-            .createHmac("sha256", "SM_SYSTEM_RAZORPAY") // Use Razorpay Secret
+            .createHmac("sha256", "KEY-SECRET") // Replace with your actual Razorpay Secret
             .update(body)
             .digest("hex");
 
         // ✅ Step 2: Compare Signatures
         if (expectedSignature === razorpay_signature) {
-            // ✅ Payment Verified → Update Database (Example Query)
-            // await db.query("UPDATE payments SET status='Paid' WHERE order_id=?", [razorpay_order_id]);
 
-            return res.json({ message: "Payment Verified Successfully" });
+            const sql = "UPDATE fees_detail SET status = 1 WHERE email LIKE ?"
+            // ✅ Step 3: Update payment status in DB
+            db.query(sql, [`%${email}%`], (err, result) => {
+                if (err) {
+                    console.error("�� Database Error:", err);
+                    return res.status(500).json({ message: "Error updating payment status", error: err.message });
+                }
+            });
+            console.log("�� Payment Status Updated for:", email);
+            return res.json({ message: "Payment Verified and Status Updated" });
         } else {
             return res.status(400).json({ message: "Invalid Payment Signature" });
         }

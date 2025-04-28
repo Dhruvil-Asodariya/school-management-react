@@ -87,11 +87,25 @@ const StudentManage = () => {
     if (result.isConfirmed) {
       try {
         await axios.delete(`http://localhost:8081/student/${studentId}`);
-        Swal.fire("Deleted!", "The student has been deleted.", "success");
+        Swal.fire({
+          title: "Deleted!",
+          text: "The student has been deleted.",
+          icon: "success",
+          timer: 1000,
+          timerProgressBar: true,
+          showConfirmButton: false,
+        });
         fetchData();
       } catch (error) {
         console.error("Error deleting student:", error);
-        Swal.fire("Error!", "Failed to delete the student.", "error");
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to delete the student.",
+          icon: "error",
+          timer: 1000,
+          timerProgressBar: true,
+          showConfirmButton: false,
+        });
       }
     }
   };

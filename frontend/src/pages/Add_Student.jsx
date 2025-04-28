@@ -8,9 +8,9 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 const Add_Student = () => {
-
   const navigate = useNavigate();
-  const [classes, setClasses] = useState([]); // ✅ State for class options
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const validationSchema = Yup.object({
     firstName: Yup.string()
@@ -22,7 +22,7 @@ const Add_Student = () => {
     email: Yup.string()
       .email("Please enter a valid Email address")
       .required("Please Enter Email"),
-    class: Yup.string().required("Please select Class"),
+    classId: Yup.string().required("Please select Class"),
     phoneNo: Yup.string()
       .matches(/^\d+$/, "Only numbers are allowed")
       .length(10, "Phone number must be 10 digits")
@@ -36,14 +36,12 @@ const Add_Student = () => {
     address: Yup.string().required("Please enter Address"),
     image: Yup.mixed()
       .required("Please select Image")
-      .test(
-        "fileType",
-        "Only PNG, JPG and JPEG files are allowed",
-        (value) =>
-          value &&
-          ["image/png", "image/jpg", "image/jpeg"].includes(value.type)
+      .test("fileType", "Only PNG, JPG and JPEG files are allowed", (value) =>
+        value ? ["image/png", "image/jpg", "image/jpeg"].includes(value.type) : false
+      )
+      .test("fileSize", "File size is too large (max 2MB)", (value) =>
+        value ? value.size <= 2 * 1024 * 1024 : false
       ),
-
   });
 
   const formik = useFormik({
@@ -56,11 +54,12 @@ const Add_Student = () => {
       dob: "",
       address: "",
       gender: "",
-      class: "",
+      classId: "",
       image: null,
     },
     validationSchema,
     onSubmit: async (values) => {
+      setLoading(true);
       try {
         const formData = new FormData();
         formData.append("firstName", values.firstName);
@@ -68,16 +67,14 @@ const Add_Student = () => {
         formData.append("email", values.email);
         formData.append("phoneNo", values.phoneNo);
         formData.append("ephoneNo", values.ephoneNo);
-        formData.append("dob", values.dob);
+        formData.append("dob", new Date(values.dob).toISOString().split("T")[0]);
         formData.append("address", values.address);
         formData.append("gender", values.gender);
-        formData.append("class", values.class);
-        formData.append("image", values.image); // Append file
+        formData.append("class", values.classId);
+        formData.append("image", values.image);
 
         await axios.post("http://localhost:8081/student", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         });
 
         Swal.fire({
@@ -91,10 +88,8 @@ const Add_Student = () => {
           formik.resetForm();
           navigate("/student_manage");
         });
-
       } catch (error) {
         console.error("Error adding student:", error);
-        // ✅ If email already exists, show an error
         if (error.response && error.response.status === 400) {
           Swal.fire({
             toast: true,
@@ -115,32 +110,28 @@ const Add_Student = () => {
             showConfirmButton: true,
           });
         }
+      } finally {
+        setLoading(false);
       }
-    }
+    },
   });
 
-  // 🔹 Fetch class options from the database
   useEffect(() => {
     axios
-      .get("http://localhost:8081/class") // ✅ Adjust this to your actual API endpoint
-      .then((response) => {
-        setClasses(response.data); // ✅ Save fetched classes in state
-      })
-      .catch((error) => {
-        console.error("Error fetching classes:", error);
-      });
+      .get("http://localhost:8081/class")
+      .then((response) => setClasses(response.data))
+      .catch((error) => console.error("Error fetching classes:", error));
   }, []);
 
   return (
-    <div className="flex justify-center items-center ">
+    <div className="flex justify-center items-center">
       <div className="w-full bg-gray-10 shadow-lg rounded-lg p-6 mt-3">
         <Form_Title name="Add New Student" />
         <form className="space-y-4" onSubmit={formik.handleSubmit}>
+          {/* Name Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                First Name
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">First Name</label>
               <input
                 type="text"
                 name="firstName"
@@ -148,15 +139,11 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               />
               {formik.touched.firstName && formik.errors.firstName && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.firstName}
-                </span>
+                <span className="text-red-500 text-sm">{formik.errors.firstName}</span>
               )}
             </div>
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Last Name
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">Last Name</label>
               <input
                 type="text"
                 name="lastName"
@@ -164,16 +151,14 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               />
               {formik.touched.lastName && formik.errors.lastName && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.lastName}
-                </span>
+                <span className="text-red-500 text-sm">{formik.errors.lastName}</span>
               )}
             </div>
           </div>
+
+          {/* Email */}
           <div>
-            <label className="block text-gray-700 font-medium pb-3">
-              Email
-            </label>
+            <label className="block text-gray-700 font-medium pb-3">Email</label>
             <input
               type="email"
               name="email"
@@ -181,16 +166,14 @@ const Add_Student = () => {
               className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
             />
             {formik.touched.email && formik.errors.email && (
-              <span className="text-red-500 text-sm">
-                {formik.errors.email}
-              </span>
+              <span className="text-red-500 text-sm">{formik.errors.email}</span>
             )}
           </div>
+
+          {/* Phone Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Phone No.
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">Phone No.</label>
               <input
                 type="text"
                 name="phoneNo"
@@ -198,16 +181,11 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               />
               {formik.touched.phoneNo && formik.errors.phoneNo && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.phoneNo}
-                </span>
+                <span className="text-red-500 text-sm">{formik.errors.phoneNo}</span>
               )}
             </div>
-
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Emergency Phone No.
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">Emergency Phone No.</label>
               <input
                 type="text"
                 name="ephoneNo"
@@ -215,17 +193,15 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               />
               {formik.touched.ephoneNo && formik.errors.ephoneNo && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.ephoneNo}
-                </span>
+                <span className="text-red-500 text-sm">{formik.errors.ephoneNo}</span>
               )}
             </div>
           </div>
+
+          {/* DOB & Address */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Date Of Birth
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">Date Of Birth</label>
               <input
                 type="date"
                 name="dob"
@@ -233,15 +209,11 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               />
               {formik.touched.dob && formik.errors.dob && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.dob}
-                </span>
+                <span className="text-red-500 text-sm">{formik.errors.dob}</span>
               )}
             </div>
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Address
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">Address</label>
               <input
                 type="text"
                 name="address"
@@ -249,18 +221,15 @@ const Add_Student = () => {
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               />
               {formik.touched.address && formik.errors.address && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.address}
-                </span>
+                <span className="text-red-500 text-sm">{formik.errors.address}</span>
               )}
             </div>
           </div>
 
+          {/* Gender & Class */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Gender
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">Gender</label>
               <select
                 name="gender"
                 {...formik.getFieldProps("gender")}
@@ -271,56 +240,54 @@ const Add_Student = () => {
                 <option value="Female">Female</option>
               </select>
               {formik.touched.gender && formik.errors.gender && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.gender}
-                </span>
+                <span className="text-red-500 text-sm">{formik.errors.gender}</span>
               )}
             </div>
 
             <div>
-              <label className="block text-gray-700 font-medium pb-3">
-                Class
-              </label>
+              <label className="block text-gray-700 font-medium pb-3">Class</label>
               <select
-                name="class"
-                {...formik.getFieldProps("class")}
+                name="classId"
+                {...formik.getFieldProps("classId")}
                 className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
               >
                 <option value="">Choose...</option>
                 {classes.map((cls) => (
-                  <option key={cls.class_id} value={cls.class_id}>
+                  <option key={cls.class_id} value={cls.class_name}>
                     {cls.class_name}
                   </option>
                 ))}
               </select>
-              {formik.touched.class && formik.errors.class && (
-                <span className="text-red-500 text-sm">
-                  {formik.errors.class}
-                </span>
+              {formik.touched.classId && formik.errors.classId && (
+                <span className="text-red-500 text-sm">{formik.errors.classId}</span>
               )}
             </div>
           </div>
+
+          {/* Image Upload */}
           <div>
-            <label className="block text-gray-700 font-medium pb-3">
-              Student Image
-            </label>
+            <label className="block text-gray-700 font-medium pb-3">Student Image</label>
             <input
               type="file"
               name="image"
               className="w-full px-3 py-2 bg-white border rounded-lg focus:outline-sky-600"
-              onChange={(event) =>
-                formik.setFieldValue("image", event.currentTarget.files[0])
-              }
+              onChange={(event) => {
+                const file = event.currentTarget.files[0];
+                if (file) {
+                  formik.setFieldValue("image", file);
+                  formik.validateField("image");
+                }
+              }}
+              onBlur={formik.handleBlur}
             />
             {formik.touched.image && formik.errors.image && (
-              <span className="text-red-500 text-sm">
-                {formik.errors.image}
-              </span>
+              <span className="text-red-500 text-sm">{formik.errors.image}</span>
             )}
           </div>
 
+          {/* Submit Button */}
           <div className="text-left">
-            <Button name="+ Add Student" />
+            <Button name={loading ? "Adding..." : "+ Add Student"} disabled={loading} />
           </div>
         </form>
       </div>

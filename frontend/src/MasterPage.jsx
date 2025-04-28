@@ -59,6 +59,7 @@ const MasterPage = ({ children }) => {
   const [principalSubmenuOpen, setPrincipalSubmenuOpen] = useState(false);
   const [materialSubmenuOpen, setMaterialSubmenuOpen] = useState(false);
   const [feeSubmenuOpen, setFeeSubmenuOpen] = useState(false);
+  const [feeAmountSubmenuOpen, setFeeAmountSubmenuOpen] = useState(false);
   const [holidaySubmenuOpen, setHolidaySubmenuOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(() => {
     const savedLock = localStorage.getItem("isLocked");
@@ -76,15 +77,85 @@ const MasterPage = ({ children }) => {
   const correctPassword = lockPassword;
 
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleSidebar = () => {
+    setSidebarOpen(prev => {
+      const newSidebarState = !prev;
+      if (!newSidebarState) {
+        setStudentSubmenuOpen(false);  // 👈 Close submenu when sidebar closing
+        setFacultySubmenuOpen(false);
+        setPrincipalSubmenuOpen(false);
+        setMaterialSubmenuOpen(false);
+        setFeeSubmenuOpen(false);
+        setFeeAmountSubmenuOpen(false);
+        setHolidaySubmenuOpen(false);
+      }
+      return newSidebarState;
+    });
+  };
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
-  const toggleStudentSubmenu = () => setStudentSubmenuOpen(!studentSubmenuOpen);
-  const toggleFacultySubmenu = () => setFacultySubmenuOpen(!facultySubmenuOpen);
-  const togglePrincipalSubmenu = () => setPrincipalSubmenuOpen(!principalSubmenuOpen);
-  const toggleMaterialSubmenu = () => setMaterialSubmenuOpen(!materialSubmenuOpen);
-  const toggleFeeSubmenu = () => setFeeSubmenuOpen(!feeSubmenuOpen);
-  const toggleHolidaySubmenu = () => setHolidaySubmenuOpen(!holidaySubmenuOpen);
+  const toggleStudentSubmenu = () => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      // Optional: little delay for smoothness
+      setTimeout(() => setStudentSubmenuOpen(true), 100);
+    } else {
+      setStudentSubmenuOpen(prev => !prev);
+    }
+  };
+  const toggleFacultySubmenu = () => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      setTimeout(() => setFacultySubmenuOpen(true), 200);
+    } else {
+      setFacultySubmenuOpen(prev => !prev);
+    }
+  };
+
+  const togglePrincipalSubmenu = () => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      setTimeout(() => setPrincipalSubmenuOpen(true), 200);
+    } else {
+      setPrincipalSubmenuOpen(prev => !prev);
+    }
+  };
+
+  const toggleMaterialSubmenu = () => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      setTimeout(() => setMaterialSubmenuOpen(true), 200);
+    } else {
+      setMaterialSubmenuOpen(prev => !prev);
+    }
+  };
+
+  const toggleFeeSubmenu = () => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      setTimeout(() => setFeeSubmenuOpen(true), 200);
+    } else {
+      setFeeSubmenuOpen(prev => !prev);
+    }
+  };
+
+  const toggleFeeAmountSubmenu = () => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      setTimeout(() => setFeeAmountSubmenuOpen(true), 200);
+    } else {
+      setFeeAmountSubmenuOpen(prev => !prev);
+    }
+  };
+
+  const toggleHolidaySubmenu = () => {
+    if (!sidebarOpen) {
+      setSidebarOpen(true);
+      setTimeout(() => setHolidaySubmenuOpen(true), 200);
+    } else {
+      setHolidaySubmenuOpen(prev => !prev);
+    }
+  };
 
   const handleLockScreen = () => {
     setIsLocked(true);
@@ -280,13 +351,15 @@ const MasterPage = ({ children }) => {
               >
                 <FaUsers className="w-5 h-5" />
                 {sidebarOpen && <span className="ml-4">Student</span>}
-                {sidebarOpen &&
-                  (studentSubmenuOpen ? (
+                {sidebarOpen && (
+                  studentSubmenuOpen ? (
                     <IoMdArrowDropdown className="ml-auto" />
                   ) : (
                     <IoMdArrowDropright className="ml-auto" />
-                  ))}
+                  )
+                )}
               </li>
+
               {studentSubmenuOpen && (
                 <ul
                   className={`transition-all duration-300 ${sidebarOpen
@@ -459,9 +532,34 @@ const MasterPage = ({ children }) => {
                     <BsDot className="w-5 h-5 mr-2" />
                     <Link to="/fees_manage">All Fee</Link>
                   </li>
+                </ul>
+              )}
+
+              {/* Fees Amount Manage */}
+              <li
+                className="py-4 px-4 hover:font-bold hover:scale-106 cursor-pointer flex items-center"
+                onClick={toggleFeeAmountSubmenu}
+              >
+                <FaMoneyCheckAlt className="w-5 h-5" />
+                {sidebarOpen && <span className="ml-4">Fees Amount Manage</span>}
+                {sidebarOpen &&
+                  (feeAmountSubmenuOpen ? (
+                    <IoMdArrowDropdown className="ml-auto" />
+                  ) : (
+                    <IoMdArrowDropright className="ml-auto" />
+                  ))}
+              </li>
+
+              {feeAmountSubmenuOpen && (
+                <ul
+                  className={`transition-all duration-300 ${sidebarOpen
+                    ? "ml-10 bg-white p-2 rounded"
+                    : "absolute left-16 w-48 bg-white shadow-lg p-2 rounded"
+                    }`}
+                >
                   <li className="py-2 flex items-center hover:font-bold hover:scale-106">
                     <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/pending_fees_manage">Pending Fee</Link>
+                    <Link to="/fees_amount">All Fee Amount</Link>
                   </li>
                 </ul>
               )}
@@ -544,7 +642,7 @@ const MasterPage = ({ children }) => {
   }
 
   //Principal Dashboard
-  else if (userSession.role === 2) {
+  if (userSession.role === 2) {
     return (
       <div className="h-screen flex flex-col bg-white text-black">
         {/* Navbar */}
@@ -765,6 +863,63 @@ const MasterPage = ({ children }) => {
                   <li className="py-2 flex items-center hover:font-bold hover:scale-106">
                     <BsDot className="w-5 h-5 mr-2" />
                     <Link to="/holiday">Manage Holiday</Link>
+                  </li>
+                </ul>
+              )}
+              {/* Fees Manage */}
+              <li
+                className="py-4 px-4 hover:font-bold hover:scale-106 cursor-pointer flex items-center"
+                onClick={toggleFeeSubmenu}
+              >
+                <FaMoneyCheckAlt className="w-5 h-5" />
+                {sidebarOpen && <span className="ml-4">Fee</span>}
+                {sidebarOpen &&
+                  (feeSubmenuOpen ? (
+                    <IoMdArrowDropdown className="ml-auto" />
+                  ) : (
+                    <IoMdArrowDropright className="ml-auto" />
+                  ))}
+              </li>
+
+              {feeSubmenuOpen && (
+                <ul
+                  className={`transition-all duration-300 ${sidebarOpen
+                    ? "ml-10 bg-white p-2 rounded"
+                    : "absolute left-16 w-48 bg-white shadow-lg p-2 rounded"
+                    }`}
+                >
+                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
+                    <BsDot className="w-5 h-5 mr-2" />
+                    <Link to="/fees_manage">All Fee</Link>
+                  </li>
+                </ul>
+              )}
+
+              {/* Fees Amount Manage */}
+              <li
+                className="py-4 px-4 hover:font-bold hover:scale-106 cursor-pointer flex items-center"
+                onClick={toggleFeeAmountSubmenu}
+              >
+                <FaMoneyCheckAlt className="w-5 h-5" />
+                {sidebarOpen && <span className="ml-4">Fees Amount Manage</span>}
+                {sidebarOpen &&
+                  (feeAmountSubmenuOpen ? (
+                    <IoMdArrowDropdown className="ml-auto" />
+                  ) : (
+                    <IoMdArrowDropright className="ml-auto" />
+                  ))}
+              </li>
+
+              {feeAmountSubmenuOpen && (
+                <ul
+                  className={`transition-all duration-300 ${sidebarOpen
+                    ? "ml-10 bg-white p-2 rounded"
+                    : "absolute left-16 w-48 bg-white shadow-lg p-2 rounded"
+                    }`}
+                >
+                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
+                    <BsDot className="w-5 h-5 mr-2" />
+                    <Link to="/fees_amount">All Fee Amount</Link>
                   </li>
                 </ul>
               )}
@@ -1126,10 +1281,6 @@ const MasterPage = ({ children }) => {
                     : "absolute left-16 w-48 bg-white shadow-lg p-2 rounded"
                     }`}
                 >
-                  <li className="py-2 flex items-center hover:font-bold hover:scale-106">
-                    <BsDot className="w-5 h-5 mr-2" />
-                    <Link to="/fees_manage">All Fee</Link>
-                  </li>
                   <li className="py-2 flex items-center hover:font-bold hover:scale-106">
                     <BsDot className="w-5 h-5 mr-2" />
                     <Link to="/pending_fees_manage">Pending Fee</Link>
